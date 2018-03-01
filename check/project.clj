@@ -1,4 +1,4 @@
-(defproject simple/check "1.0.0"
+(defproject simple/check "2.0.0"
 
   :description "An assertion that cannot be turned off."
   :url "https://github.com/klauswuestefeld/simple-clj/tree/master/check"
