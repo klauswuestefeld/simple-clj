@@ -1,4 +1,4 @@
-(defproject simple/test-script2 "0.1"
+(defproject simple/test-script2 "0.2-SNAPSHOT"
 
   :description "Support for event driven test scripts."
   :url "https://github.com/klauswuestefeld/simple-clj/tree/master/test-script"
