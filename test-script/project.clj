@@ -8,6 +8,7 @@
 
   :dependencies [[org.clojure/clojure "1.10.0"]
                  [cheshire "5.8.0"] ; JSON for serializing test arguments.
-                 [io.aviso/pretty "0.1.34"]]
+                 [io.aviso/pretty "0.1.34"]
+                 [simple/check "2.0.0"]]
 
   :repositories [["clojars" {:sign-releases false}]])
