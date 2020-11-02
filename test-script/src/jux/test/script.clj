@@ -1,4 +1,4 @@
-(ns jux.test-script
+(ns jux.test.script
   (:require
    [clojure.repl :as repl]
    [clojure.string :as string]
@@ -66,6 +66,8 @@
 (defn- arity [function]
   (-> function meta :arglists first count))
 
+(defn- demunge [function]
+  (-> function str repl/demunge (string/split #"@") first))
 (defn- ->var [function]
   (-> function demunge symbol resolve))
 
@@ -150,7 +152,9 @@
     :else
     (handle-expected-result! test v)))
 
-(defn- check-complete! [{:keys [user function description] :as test}]
+(defn- check-complete! [{:keys [user function description actual-result] :as test}]
+  (when (instance? Exception actual-result)
+    (throw actual-result))
   (check (and (not user)
               (not function))
          (str "The last step is incomplete in test: " description))
