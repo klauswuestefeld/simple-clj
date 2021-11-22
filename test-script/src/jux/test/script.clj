@@ -5,6 +5,7 @@
    [cheshire.core :as json]
    [io.aviso.exception :refer [write-exception]]
    [io.aviso.ansi :refer [yellow]]
+   [jux.implicit-args]
    [simple.check2 :refer [check]]))
 
 (def this-namespace (-> *ns* ns-name str))
@@ -86,7 +87,8 @@
 
 (defn- silent-apply [{:keys [function] :as test}]
   (try
-    (let [returned-result (apply function (args test))]
+    (let [returned-result (binding [jux.implicit-args/*args* (:param test)]
+                            (apply function (args test)))]
       (if (-> function meta :command)
         (process-command-result test returned-result)
         (assoc test :actual-result returned-result)))
