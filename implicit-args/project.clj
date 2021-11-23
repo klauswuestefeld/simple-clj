@@ -1,4 +1,4 @@
-(defproject jux/implicit-args "2021.11.19"
+(defproject house.jux/implicit-args "2021.11.19"
 
   :description "Dynamic vars to be used as implicit args for ubiquitous args."
   :url "https://github.com/klauswuestefeld/simple-clj/tree/master/implicit-args"
