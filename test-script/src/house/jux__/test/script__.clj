@@ -1,11 +1,10 @@
-(ns jux.test.script
+(ns house.jux--.test.script--
   (:require
    [clojure.repl :as repl]
    [clojure.string :as string]
    [cheshire.core :as json]
    [io.aviso.exception :refer [write-exception]]
    [io.aviso.ansi :refer [yellow]]
-   [jux.implicit-args]
    [simple.check2 :refer [check]]))
 
 (def this-namespace (-> *ns* ns-name str))
@@ -79,24 +78,31 @@
                           (:result returned-result)
                           ::no-result)))
 
+(defn- json-roundtrip [x]
+  (-> x json/generate-string (json/parse-string keyword)))
+
 (defn- args [{:keys [single-user state user param] :as test}]
   (let [user (or single-user user)]
     (if (contains? test :param)
-      [state user param]
+      [state user (json-roundtrip param)]
       [state user])))
+
+(defn- filter-bindings [param]
+  (if (map? param)
+    (->> param
+         (filter (fn [[k _v]] (var? k)))
+         (into {}))
+    {}))
 
 (defn- silent-apply [{:keys [function] :as test}]
   (try
-    (let [returned-result (binding [jux.implicit-args/*args* (:param test)]
+    (let [returned-result (with-bindings (filter-bindings (:param test))
                             (apply function (args test)))]
       (if (-> function meta :command)
         (process-command-result test returned-result)
         (assoc test :actual-result returned-result)))
     (catch Exception e
       (assoc test :actual-result e))))
-
-(defn- json-roundtrip [x]
-  (-> x json/generate-string (json/parse-string keyword)))
 
 (defn- check-function [f]
   (check (fn? f) (str "Expected a function but got: " (if (nil? f) "nil" f))))
@@ -130,7 +136,7 @@
 
 (defn- handle-param! [test param]
   (-> test
-      (assoc :param (json-roundtrip param))
+      (assoc :param param)
       apply!))
 
 (defn- handle-function! [test f]
