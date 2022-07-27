@@ -12,3 +12,5 @@ checkouts/
 .lein-failures
 .nrepl-port
 .calva
+.clj-kondo
+.lsp
