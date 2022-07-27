@@ -66,8 +66,6 @@
 (defn- arity [function]
   (-> function meta :arglists first count))
 
-(defn- demunge [function]
-  (-> function str repl/demunge (string/split #"@") first))
 (defn- ->var [function]
   (-> function demunge symbol resolve))
 
