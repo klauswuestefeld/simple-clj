@@ -186,8 +186,8 @@
         initial-state (if (symbol? initial-state)
                         (saved-sheet-state! initial-state)
                         initial-state)
-        initial-query-results-line (-> queries first count (+ 1))]
-    (execute-queries initial-query-results-line initial-state queries initial-results)
+        initial-query-results-line (-> queries first count (+ 2))]
+    (execute-queries initial-state initial-query-results-line queries initial-results)
     (reduce (partial execute-step queries) initial-state steps)))
 
 (defn- require-namespace-refer-all [namespace required-namespace]
