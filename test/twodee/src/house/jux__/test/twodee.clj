@@ -262,7 +262,7 @@
         path->spreadsheet (reduce assoc-spreadsheet-data {} test-paths)
         path->test        (assoc-test-to-path path->spreadsheet)
         sorted-path->test (into (sort-by key path->test) {})]
-    (binding [*ns* (find-ns 'house.jux.twodtest)] ; TODO: find a cleaner way. This can be any ns just to set the root binding of *ns*
+    (binding [*ns* (find-ns 'house.jux--.test.twodee)] ; TODO: find a cleaner way. This can be any ns just to set the root binding of *ns*
       (run! (fn [[path test]]
               (let [require-sheet-path (get-require-sheet-path path)
                     test-namespace     (-> test :subject-namespace symbol)]
