@@ -216,9 +216,15 @@
   (doto (run-ns-tests test-map)
     (save-sheet-state sheet-path)))
 
+(defn- path->namespace [path]
+  (-> path 
+      (string/split #"/")
+      second
+      (string/replace #"_" "-")))
+
 (defn- assoc-test [path test]
   (assoc test :test (csv->test-map (:spreadsheet-data test))
-         :subject-namespace (-> path (string/split #"/") second)))
+              :subject-namespace (path->namespace path)))
 
 (defn- get-require-sheet-path [test-path]
   (let [require-file  (str all-spreadsheets-folder
