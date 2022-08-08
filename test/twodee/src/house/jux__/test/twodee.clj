@@ -218,10 +218,9 @@
     (save-sheet-state sheet-path)))
 
 (defn- path->namespace [path]
-  (-> path 
+  (-> path
       (string/split #"/")
-      second
-      (string/replace #"_" "-")))
+      second))
 
 (defn- assoc-test [path test]
   (assoc test :test (csv->test-map (:spreadsheet-data test))
