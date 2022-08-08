@@ -193,12 +193,13 @@
 (defn- require-namespace-refer-all [namespace required-namespace]
   (eval `(ns ~namespace (:require [~required-namespace :refer :all]))))
 
-(defn- init-requires [subject-namespace require-sheet-path]
+(defn- init-requires [subject-namespace require-sheet-paths]
   (let [namespace 'tmp.twodtests]
     (remove-ns namespace)
     (require-namespace-refer-all namespace subject-namespace)
-    (when require-sheet-path
-      (eval-requires namespace require-sheet-path))))
+    (when-not (empty? require-sheet-paths)
+      (doseq [require-sheet-path require-sheet-paths]
+        (eval-requires namespace require-sheet-path)))))
 
 (defn- sheet-path->sheet-name [sheet-path]
   (as-> sheet-path _
@@ -226,16 +227,20 @@
   (assoc test :test (csv->test-map (:spreadsheet-data test))
               :subject-namespace (path->namespace path)))
 
-(defn- get-require-sheet-path [test-path]
-  (let [require-file  (str all-spreadsheets-folder
-                           (as-> test-path _
-                             (string/split _ #"/")
-                             (drop-last _)
-                             (string/join "/" _))
-                           "/require.csv")]
-    (if (-> require-file java.io/file .exists)
-      require-file
-      nil)))
+(defn- get-require-sheet-paths [test-path]
+  (let [paths (-> test-path (string/split #"/") drop-last)]
+    (->> paths
+         (reduce (fn [acc cv]
+                   (let [new-path (str (:path acc) (when-not (string/blank? cv)
+                                                     "/") cv)
+                         require-file (str new-path "/require.csv")
+                         acc (assoc acc :path new-path)]
+                     (if (-> require-file java.io/file .exists)
+                       (update-in acc [:requires] conj require-file)
+                       acc)))
+                 {:path all-spreadsheets-folder
+                  :requires []})
+         :requires)))
 
 (defn- assoc-spreadsheet-data [m test-path]
   (let [path (-> test-path
@@ -264,9 +269,9 @@
         sorted-path->test (into (sort-by key path->test) {})]
     (binding [*ns* (find-ns 'house.jux--.test.twodee)] ; TODO: find a cleaner way. This can be any ns just to set the root binding of *ns*
       (run! (fn [[path test]]
-              (let [require-sheet-path (get-require-sheet-path path)
-                    test-namespace     (-> test :subject-namespace symbol)]
-                (init-requires test-namespace require-sheet-path)
+              (let [require-sheet-paths (get-require-sheet-paths path)
+                    test-namespace      (-> test :subject-namespace symbol)]
+                (init-requires test-namespace require-sheet-paths)
                 (run-test! path (:test test))
                 (str "Test passed:" path)))
             sorted-path->test))
