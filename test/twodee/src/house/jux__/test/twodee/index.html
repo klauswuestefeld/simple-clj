@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en" style="margin: 0px; padding: 0px; height: 100%">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Twodtest</title>
+
+  <script src="https://bossanova.uk/jspreadsheet/v4/jexcel.js"></script>
+  <script src="https://jsuites.net/v4/jsuites.js"></script>
+  <link rel="stylesheet" href="https://jsuites.net/v4/jsuites.css" type="text/css" />
+  <link rel="stylesheet" href="https://bossanova.uk/jspreadsheet/v4/jexcel.css" type="text/css" />
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Material+Icons" />
+  <style>
+    #twodtest {
+      margin: 12px;
+    }
+
+    details > *:not(summary) {
+      margin-left: 1em;
+    }
+
+    details p {
+      margin-top: 0.4rem;
+      margin-bottom: 0.4rem;
+    }
+  </style>
+</head>
+
+<body style="margin: 0px; padding: 0px; height: 100%;">
+  <div id="menu-div" style="display: none; width: 350px; background-color: #f5f5f5; height: 100%; float: left;">
+    <div id="button-container">
+      <button id="save-spreadsheet-btn" onclick="saveSpreadsheet();">Save and Run Tests!</button>
+    </div>
+  </div>
+  <div id="twodtest-spreadsheet"></div>
+</body>
+<script>
+  let jspreadsheetObj;
+  let currentFilePath = null;
+
+  function loadJSpreadsheet(data) {
+    jspreadsheetObj = jspreadsheet(document.getElementById("twodtest-spreadsheet"), {
+      data,
+      onevent: function (event, a, b, c, d, e, f) {
+        // console.log(event, a, b, c, d, e, f);
+      },
+      onopenworksheet: function (_worksheet, worksheetIndex) {
+        removeTestStatusAlert();
+      },
+      oncreateworksheet: function (_event) {
+        removeTestStatusAlert();
+      },
+      onchange: function (event) {
+        removeTestStatusAlert();
+        clearErrorHighlights();
+      },
+    });
+  }
+
+  function clearErrorHighlights() {
+    const table = jspreadsheetObj.getData();
+    for (let i = 0; i < table.length; i++) {
+      for (let j = 0; j < table[i].length; j++) {
+        const cellDOMElement = jspreadsheetObj.getCellFromCoords(j, i);
+        cellDOMElement.style.backgroundColor = "white";
+      }
+    }
+  }
+
+  function displayTestStatusAlert(message, textColor) {
+    const alert = document.createElement("p");
+    alert.id = "test-status-alert";
+    alert.textContent = message;
+
+    if (textColor) {
+      alert.style.color = textColor;
+    }
+
+    const container = document.querySelector("#button-container");
+    container.appendChild(alert);
+  }
+
+  function removeTestStatusAlert() {
+    const alert = document.querySelector("#test-status-alert");
+    alert?.remove();
+  }
+
+  function alertTestsRunning() {
+    removeTestStatusAlert();
+    displayTestStatusAlert("Running tests...");
+  }
+
+  function alertTestsPassed() {
+    removeTestStatusAlert();
+    displayTestStatusAlert("All tests passed", "green");
+  }
+
+  async function saveSpreadsheet() {
+    alertTestsRunning();
+    clearErrorHighlights();
+
+    const response = await fetch("/api/save-and-run", {
+      method: "POST",
+      body: JSON.stringify({
+        "spreadsheet-data": jspreadsheetObj?.getData(),
+        filename: currentFilePath
+      }),
+    });
+
+    if (!response.ok) {
+      removeTestStatusAlert();
+      const jsonResponse = await response.json();
+      if (jsonResponse["ex-data"]) {
+        const cell = jsonResponse["ex-data"].column + jsonResponse["ex-data"].line;
+        const cellDOMElement = jspreadsheetObj.getCell(cell);
+        cellDOMElement.style.backgroundColor = "red";
+        alert(jsonResponse.message + "\nCell " + cell);
+      } else {
+        alert(jsonResponse.message);
+      }
+    } else {
+      setTimeout(() => alertTestsPassed(), 600);
+    }
+  }
+
+  async function getSpreadsheet(name) {
+    const response = await fetch("/api/csv-read", {
+      method: "POST",
+      body: JSON.stringify({ filename: name }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+
+      return data;
+    }
+  }
+
+  async function loadTestSpreadsheet(filePath) {
+    const data = await getSpreadsheet(filePath);
+
+    const spreadsheetDOMElement = document.querySelector("#twodtest-spreadsheet");
+    Array.from(spreadsheetDOMElement?.children)?.forEach(child => child.remove());
+    removeTestStatusAlert();
+
+    loadJSpreadsheet(data);
+    currentFilePath = filePath;
+  }
+
+  function getMenuItemFilePath(element, path) {
+    if (element.parentElement.id === "twodtest") {
+      return path;
+    }
+
+    path = "/" + element.parentElement.id + path;
+
+    return getMenuItemFilePath(element.parentElement, path);
+  }
+
+  function appendElementToMenu(menu, el) {
+    const isDirectory = el.children;
+    if (isDirectory) {
+      const details = document.createElement("details");
+      details.id = el.name;
+
+      const summary = document.createElement("summary");
+      summary.textContent = el.name;
+      summary.style.cursor = "pointer";
+
+      details.appendChild(summary);
+
+      menu.appendChild(details);
+
+      el.children.forEach(el => appendElementToMenu(details, el));
+    } else {
+      const p = document.createElement("p");
+      p.textContent = el.name;
+      p.style.cursor = "pointer";
+
+      menu.appendChild(p);
+
+      const filePath = getMenuItemFilePath(p, "/" + el.name);
+
+      p.addEventListener("click", (_ev) => loadTestSpreadsheet(filePath));
+    }
+  }
+
+  async function getTestTree() {
+    const response = await fetch("/api/get-test-tree");
+    return await response.json();
+  }
+
+  async function loadTestsTree() {
+    const tree = await getTestTree();
+    if (tree) {
+      const menu = document.querySelector("#menu-div");
+      menu.style.display = "block";
+      appendElementToMenu(menu, tree);
+    }
+  }
+
+  loadTestsTree();
+</script>
+
+</html>
