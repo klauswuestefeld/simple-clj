@@ -150,7 +150,9 @@
 
 (defn- execute-query [state query-results-line query-column-number [user segment0 & segments] expected-result]
   (let [result0 (eval (list (symbol segment0) state (symbol user)))
-        result  (reduce execute-segment result0 segments)]
+        result  (if (string/blank? (first segments))
+                  result0
+                  (reduce execute-segment result0 segments))]
     (compare-results {:column (query-column-idx->column query-column-number)
                       :line   query-results-line} expected-result result)))
 

@@ -13,3 +13,8 @@
                   (update :profile merge profile)
                   (assoc-in [:profile :last-updated-by] user))]
     (assoc state :result "Profile Updated")))
+
+(defn registered-profiles [state _user]
+  (if (:profile state)
+    1
+    0))
