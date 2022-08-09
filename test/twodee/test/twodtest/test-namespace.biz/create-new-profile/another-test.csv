@@ -2,6 +2,6 @@ An user can create a new profile,,,,,,,,
 ,,,,tester,tester,tester,tester,tester
 ,,,,created-profile,created-profile,created-profile,created-profile,created-profile
 ,,,,:name,:phone,:age,:created-by,:last-updated-by
-create-new-profile,,,,nil,nil,nil,nil,nil
-tester,create-new-profile,"{:name  ""New User""  :phone 444 :age 40 }",*,"""New User""",444,40,tester,
+test-namespace.biz/create-new-profile,,,,"""New User""",555,40,tester,tester
+tester,create-new-profile,"{:name  ""New User""  :phone 444 :age 40 }",*,,444,,,nil
 tester,update-profile,{:phone 555},*,,555,,,tester

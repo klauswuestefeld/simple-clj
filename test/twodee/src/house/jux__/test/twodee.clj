@@ -131,7 +131,7 @@
 
 (defn- compare-results [{:keys [column line]} expected-result actual-result]
   (check-cell! (= (eval (read-string expected-result)) actual-result)
-               (str "Actual result was:\n" actual-result)
+               (str "Actual result was:\n" (if (some? actual-result) actual-result "nil"))
                {:column column
                 :line   line}))
 
