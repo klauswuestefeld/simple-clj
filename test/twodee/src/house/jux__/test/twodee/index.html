@@ -24,6 +24,10 @@
       margin-top: 0.4rem;
       margin-bottom: 0.4rem;
     }
+
+    p.selected-test {
+      color: blue;
+    }
   </style>
 </head>
 
@@ -124,6 +128,13 @@
     }
   }
 
+  function highlightSelectedTest(element) {
+    const selectableElements = document.querySelectorAll("details p");
+    selectableElements.forEach(selectableElement => selectableElement.classList.remove("selected-test"));
+
+    element.classList.add("selected-test");
+  }
+
   async function getSpreadsheet(name) {
     const response = await fetch("/api/csv-read", {
       method: "POST",
@@ -182,7 +193,10 @@
 
       const filePath = getMenuItemFilePath(p, "/" + el.name);
 
-      p.addEventListener("click", (_ev) => loadTestSpreadsheet(filePath));
+      p.addEventListener("click", (_ev) => {
+        loadTestSpreadsheet(filePath);
+        highlightSelectedTest(p);
+      });
     }
   }
 
