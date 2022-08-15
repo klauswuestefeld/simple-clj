@@ -5,7 +5,7 @@
             [simple.check2 :refer [check]]))
 
 (def previous-query-results (atom nil))
-(def all-spreadsheets-folder "test/twodtest")
+(def all-spreadsheets-folder (java.io/file "test/twodtest"))
 
 (defn parse-csv [sheet-path]
   (let [reader (slurp sheet-path)]
@@ -239,26 +239,37 @@
       ->test
       (set-up-test! state)))
 
-(defn- list-files [directory]
-  (-> directory java.io/file .listFiles seq))
+(defn- sorted-files [directory]
+  (->> directory .listFiles (sort-by #(.getName %))))
 
-(defn- accumulate-test-state [state directory]
-  (if-let [children (list-files directory)]
-    (reduce (fn [state file]
+(defn- run-tests-in-folder! [state subject-namespace folder]
+  (let [children (seq (sorted-files folder))]
+    filtrar csv->test-map
+    state-novo = (rodar state)
+    se tiver dir c mesmo nome, fazer recursao com esse dir e state-novo
+    #_(run! (fn [file]
               (if (.isDirectory file)
-                (accumulate-test-state state file)
+                (run-tests-in-folder! state subject-namespace file)
+                (init-test! state file)))
+            children)))
+
+(defn- run-tests-in-namespace! [namespace-folder]
+  (let [subject-namespace (resolve... namespace-folder)
+        empty-state nil]
+    (run! run-tests-in-folder! empty-state subject-namespace namespace-folder)
+    
+    #_(reduce (fn [state file]
+              (if (.isDirectory file)
+                (run-tests! state file)
                 (init-test! state file))) 
             state
-            children)
-    state))
+            children)))
 
-(defn- test-namespaces []
-  (filter #(.isDirectory %) (list-files all-spreadsheets-folder)))
+(defn- namespace-folders []
+  (->> all-spreadsheets-folder sorted-files (filter #(.isDirectory %))))
 
-(defn run-tests! []
-  (let [empty-test-state nil]
-    (run! (partial accumulate-test-state empty-test-state)
-          (test-namespaces))))
+(defn run-all-tests! []
+  (run! run-tests-in-namespace! (namespace-folders)))
 
 ;; Read all files:
 ;; path->test
