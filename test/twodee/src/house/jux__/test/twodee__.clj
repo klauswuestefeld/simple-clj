@@ -5,7 +5,6 @@
             [simple.check2 :refer [check]]))
 
 (def previous-query-results (atom nil))
-(def sheets-states (atom {}))
 (def all-spreadsheets-folder "test/twodtest")
 
 (defn parse-csv [sheet-path]
@@ -178,23 +177,6 @@
     (execute-queries new-state line queries query-results)
     new-state))
 
-(defn- saved-sheet-state! [sheet]
-  (let [state (get @sheets-states (keyword sheet))]
-    (check state (str "State not found: " sheet))
-    state))
-
-(defn- run-ns-tests [{:keys [initial-state initial-results queries steps]}]
-  (let [initial-state (read-string initial-state)
-        initial-state (if (symbol? initial-state)
-                        (saved-sheet-state! initial-state)
-                        initial-state)
-        initial-query-results-line (->> queries
-                                        (map count)
-                                        (apply max)
-                                        (+ 2))]
-    (execute-queries initial-state initial-query-results-line queries initial-results)
-    (reduce (partial execute-step queries) initial-state steps)))
-
 (defn- require-namespace-refer-all [namespace required-namespace]
   (eval `(ns ~namespace (:require [~required-namespace :refer :all]))))
 
@@ -206,21 +188,17 @@
       (doseq [require-sheet-path require-sheet-paths]
         (eval-requires namespace require-sheet-path)))))
 
-(defn- sheet-path->sheet-name [sheet-path]
-  (as-> sheet-path _
-    (string/split _ #"/")
-    (rest _)
-    (string/join "/" _)))
-
-(defn- save-sheet-state [state sheet-path]
-  (let [sheet-name        (sheet-path->sheet-name sheet-path)
-        new-sheets-states (assoc @sheets-states (keyword sheet-name) state)]
-    (reset! sheets-states new-sheets-states)))
-
-(defn- run-test! [sheet-path test-map]
-  (println sheet-path)
-  (doto (run-ns-tests test-map)
-    (save-sheet-state sheet-path)))
+(defn- run-test! [previous-result {:keys [initial-state initial-results queries steps]}]
+  (let [initial-state (read-string initial-state)
+        initial-state (if (= initial-state "[parent]")
+                        previous-result
+                        initial-state)
+        initial-query-results-line (->> queries
+                                        (map count)
+                                        (apply max)
+                                        (+ 2))]
+    (execute-queries initial-state initial-query-results-line queries initial-results)
+    (reduce (partial execute-step queries) initial-state steps)))
 
 (defn- get-require-sheet-paths [test-path]
   (let [paths (-> test-path (string/split #"/") drop-last)]
@@ -237,36 +215,50 @@
                   :requires []})
          :requires)))
 
-(defn- all-test-paths []
-  (->> all-spreadsheets-folder
-       java.io/file
-       file-seq
-       (map #(.getPath %))
-       (filter #(string/includes? % ".csv"))
-       (remove #(string/includes? % "require.csv"))))
-
 (defn- path->namespace [path]
   (-> path
       (string/split #"/")
-      first))
+      (nth 2)))
 
 (defn- ->test [path]
-  {:test (-> path parse-csv csv->test-map)
-   :subject-namespace (path->namespace path)})
+  {:test              (-> path parse-csv csv->test-map)
+   :subject-namespace (path->namespace path)
+   :relative-path     path})
 
-(defn- run-test! [relative-path->state {:as test :keys [relative-path]}]
+(defn- set-up-test! [{:as state :keys [result]} {:keys [relative-path subject-namespace test]} ]
   (binding [*ns* (find-ns 'house.jux--.test.twodee--)] ; TODO: find a cleaner way. This can be any ns just to set the root binding of *ns*
     (let [require-sheet-paths (get-require-sheet-paths relative-path)
-          test-namespace      (-> test :subject-namespace symbol)]
+          test-namespace      (symbol subject-namespace)]
       (init-requires test-namespace require-sheet-paths)
-      (run-test! relative-path (:test test))
+      (assoc state :result (run-test! result test))
       (str "Test passed:" relative-path))))
 
+(defn- init-test! [state file]
+  (->> file
+      .getPath
+      ->test
+      (set-up-test! state)))
+
+(defn- list-files [directory]
+  (-> directory java.io/file .listFiles seq))
+
+(defn- accumulate-test-state [state directory]
+  (if-let [children (list-files directory)]
+    (reduce (fn [state file]
+              (if (.isDirectory file)
+                (accumulate-test-state state file)
+                (init-test! state file))) 
+            state
+            children)
+    state))
+
+(defn- test-namespaces []
+  (filter #(.isDirectory %) (list-files all-spreadsheets-folder)))
+
 (defn run-tests! []
-  (->> (all-test-paths)
-       (map ->test)
-       (sort-by :relative-path)
-       (reduce run-test! {})))
+  (let [empty-test-state nil]
+    (run! (partial accumulate-test-state empty-test-state)
+          (test-namespaces))))
 
 ;; Read all files:
 ;; path->test
