@@ -254,20 +254,19 @@
   {:test (-> path parse-csv csv->test-map)
    :subject-namespace (path->namespace path)})
 
+(defn- run-test! [relative-path->state {:as test :keys [relative-path]}]
+  (binding [*ns* (find-ns 'house.jux--.test.twodee--)] ; TODO: find a cleaner way. This can be any ns just to set the root binding of *ns*
+    (let [require-sheet-paths (get-require-sheet-paths relative-path)
+          test-namespace      (-> test :subject-namespace symbol)]
+      (init-requires test-namespace require-sheet-paths)
+      (run-test! relative-path (:test test))
+      (str "Test passed:" relative-path))))
+
 (defn run-tests! []
-  (let [sorted-path->test (->> (all-test-paths)
-                               (map (fn [path]
-                                      [path (->test path)]))
-                               (into (sorted-map)))]
-    (binding [*ns* (find-ns 'house.jux--.test.twodee--)] ; TODO: find a cleaner way. This can be any ns just to set the root binding of *ns*
-      (run! (fn [[path test]]
-              (let [require-sheet-paths (get-require-sheet-paths path)
-                    test-namespace      (-> test :subject-namespace symbol)]
-                (init-requires test-namespace require-sheet-paths)
-                (run-test! path (:test test))
-                (str "Test passed:" path)))
-            sorted-path->test))
-    "All tests passed"))
+  (->> (all-test-paths)
+       (map ->test)
+       (sort-by :relative-path)
+       (reduce run-test! {})))
 
 ;; Read all files:
 ;; path->test
