@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8" />
-  <title>Twodtest</title>
+  <title>Twodee</title>
 
   <script src="https://bossanova.uk/jspreadsheet/v4/jexcel.js"></script>
   <script src="https://jsuites.net/v4/jsuites.js"></script>
@@ -12,7 +12,7 @@
 
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Material+Icons" />
   <style>
-    #twodtest {
+    #twodee {
       margin: 12px;
     }
 
@@ -38,14 +38,14 @@
       <button id="save-spreadsheet-btn" onclick="saveSpreadsheet();">Save and Run Tests!</button>
     </div>
   </div>
-  <div id="twodtest-spreadsheet"></div>
+  <div id="twodee-spreadsheet"></div>
 </body>
 <script>
   let jspreadsheetObj;
   let currentFilePath = null;
 
   function loadJSpreadsheet(data) {
-    jspreadsheetObj = jspreadsheet(document.getElementById("twodtest-spreadsheet"), {
+    jspreadsheetObj = jspreadsheet(document.getElementById("twodee-spreadsheet"), {
       data,
       onevent: function (event, a, b, c, d, e, f) {
         // console.log(event, a, b, c, d, e, f);
@@ -152,7 +152,7 @@
   async function loadTestSpreadsheet(filePath) {
     const data = await getSpreadsheet(filePath);
 
-    const spreadsheetDOMElement = document.querySelector("#twodtest-spreadsheet");
+    const spreadsheetDOMElement = document.querySelector("#twodee-spreadsheet");
     Array.from(spreadsheetDOMElement?.children)?.forEach(child => child.remove());
     removeTestStatusAlert();
 
@@ -161,7 +161,7 @@
   }
 
   function getMenuItemFilePath(element, path) {
-    if (element.parentElement.id === "twodtest") {
+    if (element.parentElement.id === "twodee") {
       return path;
     }
 

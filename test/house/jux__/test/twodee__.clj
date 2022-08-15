@@ -1,4 +1,4 @@
-(ns house.jux--.test.twodee
+(ns house.jux--.test.twodee--
   (:require [clojure.data.csv :as csv]
             [clojure.java.io :as java.io]
             [clojure.string :as string]
@@ -8,7 +8,7 @@
 (def sheets-states (atom {}))
 (def all-spreadsheets-folder "test/twodtest")
 
-(defn- parse-csv [sheet-path]
+(defn parse-csv [sheet-path]
   (let [reader (slurp sheet-path)]
     (csv/read-csv reader)))
 
@@ -112,7 +112,7 @@
 ;;           :query-results ["ann" "\"Ann A Smith\"" "\"Annabelle\""]}
 ;;          {:command {:user "ann" :function "sign-in" :params "{:name \"Annn\" :picture \"http://pics.com/ann\"}" :result "*"}
 ;;           :query-results ["" "" ""]}]}
-(defn- csv->test-map [parsed-csv]
+(defn csv->test-map [parsed-csv]
   (check-blank-lines! parsed-csv)
   (let [title           (-> parsed-csv first first)
         queries         (queries parsed-csv)
@@ -188,7 +188,10 @@
         initial-state (if (symbol? initial-state)
                         (saved-sheet-state! initial-state)
                         initial-state)
-        initial-query-results-line (-> queries first count (+ 2))]
+        initial-query-results-line (->> queries
+                                        (map count)
+                                        (apply max)
+                                        (+ 2))]
     (execute-queries initial-state initial-query-results-line queries initial-results)
     (reduce (partial execute-step queries) initial-state steps)))
 
@@ -268,7 +271,7 @@
         path->spreadsheet (reduce assoc-spreadsheet-data {} test-paths)
         path->test        (assoc-test-to-path path->spreadsheet)
         sorted-path->test (into (sort-by key path->test) {})]
-    (binding [*ns* (find-ns 'house.jux--.test.twodee)] ; TODO: find a cleaner way. This can be any ns just to set the root binding of *ns*
+    (binding [*ns* (find-ns 'house.jux--.test.twodee--)] ; TODO: find a cleaner way. This can be any ns just to set the root binding of *ns*
       (run! (fn [[path test]]
               (let [require-sheet-paths (get-require-sheet-paths path)
                     test-namespace      (-> test :subject-namespace symbol)]

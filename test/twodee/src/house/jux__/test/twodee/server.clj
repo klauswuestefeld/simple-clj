@@ -8,7 +8,7 @@
             [ring.middleware.params :refer [wrap-params]]
             [ring.util.response :refer [resource-response]]
             [house.jux--.test.twodee.csv :as csv]
-            [house.jux--.test.twodee :as twodtest]))
+            [house.jux--.test.twodee-- :as twodee]))
 
 (def not-found (constantly {:status 404, :body "Not found"}))
 (def port 7357)
@@ -21,18 +21,18 @@
 
 (defn- save-and-run [_endpoint _user {:keys [filename spreadsheet-data]}]
   (when filename
-    (csv/write! twodtest/all-spreadsheets-folder filename spreadsheet-data))
-  (twodtest/run-tests!))
+    (csv/write! twodee/all-spreadsheets-folder filename spreadsheet-data))
+  (twodee/run-tests!))
 
 (defn- file-tree [file]
   (cond-> {:name (.getName file)}
     (.isDirectory file) (assoc :children (map file-tree (.listFiles file)))))
 
 (defn- test-tree [_endpoint _user _]
-  (file-tree (clojure.java.io/file twodtest/all-spreadsheets-folder)))
+  (file-tree (clojure.java.io/file twodee/all-spreadsheets-folder)))
 
 (defn- csv-read [_endpoint _user {:keys [filename]}]
-  (csv/read! twodtest/all-spreadsheets-folder filename nil nil nil))
+  (csv/read! twodee/all-spreadsheets-folder filename nil nil nil))
 
 (defonce server (atom nil))
 (defn restart! []
@@ -49,6 +49,6 @@
               (wrap-params)
               (run-jetty {:port  port
                           :join? false})))
-  (println "Twodtest restarted. Listening on port" port))
+  (println "Twodee restarted. Listening on port" port))
 
 (restart!)
