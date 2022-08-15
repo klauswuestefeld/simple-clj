@@ -222,15 +222,6 @@
   (doto (run-ns-tests test-map)
     (save-sheet-state sheet-path)))
 
-(defn- path->namespace [path]
-  (-> path
-      (string/split #"/")
-      second))
-
-(defn- assoc-test [path test]
-  (assoc test :test (csv->test-map (:spreadsheet-data test))
-              :subject-namespace (path->namespace path)))
-
 (defn- get-require-sheet-paths [test-path]
   (let [paths (-> test-path (string/split #"/") drop-last)]
     (->> paths
@@ -246,13 +237,7 @@
                   :requires []})
          :requires)))
 
-(defn- assoc-spreadsheet-data [m test-path]
-  (let [path (-> test-path
-                 (string/replace all-spreadsheets-folder "")
-                 (string/replace ".csv" ""))]
-    (assoc m path {:spreadsheet-data (parse-csv test-path)})))
-
-(defn- all-tests-paths []
+(defn- all-test-paths []
   (->> all-spreadsheets-folder
        java.io/file
        file-seq
@@ -260,17 +245,20 @@
        (filter #(string/includes? % ".csv"))
        (remove #(string/includes? % "require.csv"))))
 
-(defn- assoc-test-to-path [m]
-  (->> m
-       (map (fn [[path test]]
-              [path (assoc-test path test)]))
-       (into {})))
+(defn- path->namespace [path]
+  (-> path
+      (string/split #"/")
+      first))
+
+(defn- ->test [path]
+  {:test (-> path parse-csv csv->test-map)
+   :subject-namespace (path->namespace path)})
 
 (defn run-tests! []
-  (let [test-paths        (all-tests-paths)
-        path->spreadsheet (reduce assoc-spreadsheet-data {} test-paths)
-        path->test        (assoc-test-to-path path->spreadsheet)
-        sorted-path->test (into (sort-by key path->test) {})]
+  (let [sorted-path->test (->> (all-test-paths)
+                               (map (fn [path]
+                                      [path (->test path)]))
+                               (into (sorted-map)))]
     (binding [*ns* (find-ns 'house.jux--.test.twodee--)] ; TODO: find a cleaner way. This can be any ns just to set the root binding of *ns*
       (run! (fn [[path test]]
               (let [require-sheet-paths (get-require-sheet-paths path)
