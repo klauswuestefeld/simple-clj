@@ -2,6 +2,6 @@ Another test,,,,,,,,
 ,,,,tester,tester,tester,tester,tester
 ,,,,created-profile,created-profile,created-profile,created-profile,registered-profiles
 ,,,,:name,:phone,:age,:created-by,
-test-namespace.biz/create-new-profile,,,,"""New User""",555,40,tester,1
+"""[parent]""",,,,"""New User""",555,40,tester,1
 tester,create-new-profile,"{:name  ""New User""  :phone 444 :age 40 }",*,,444,,,
 tester,update-profile,{:phone 555},*,,555,,,

@@ -188,10 +188,10 @@
       (doseq [require-sheet-path require-sheet-paths]
         (eval-requires namespace require-sheet-path)))))
 
-(defn- run-test! [previous-result {:keys [initial-state initial-results queries steps]}]
+(defn- run-test! [previous-state {:keys [initial-state initial-results queries steps]}]
   (let [initial-state (read-string initial-state)
         initial-state (if (= initial-state "[parent]")
-                        previous-result
+                        previous-state
                         initial-state)
         initial-query-results-line (->> queries
                                         (map count)
@@ -200,70 +200,70 @@
     (execute-queries initial-state initial-query-results-line queries initial-results)
     (reduce (partial execute-step queries) initial-state steps)))
 
-(defn- get-require-sheet-paths [test-path]
+(defn- get-require-sheets-path [test-path]
   (let [paths (-> test-path (string/split #"/") drop-last)]
     (->> paths
          (reduce (fn [acc cv]
-                   (let [new-path (str (:path acc) (when-not (string/blank? cv)
-                                                     "/") cv)
+                   (let [new-path (if (string/blank? (:path acc))
+                                    cv
+                                    (str (:path acc) "/" cv))
                          require-file (str new-path "/require.csv")
                          acc (assoc acc :path new-path)]
                      (if (-> require-file java.io/file .exists)
                        (update-in acc [:requires] conj require-file)
                        acc)))
-                 {:path all-spreadsheets-folder
+                 {:path     nil
                   :requires []})
          :requires)))
 
-(defn- path->namespace [path]
-  (-> path
-      (string/split #"/")
-      (nth 2)))
-
-(defn- ->test [path]
-  {:test              (-> path parse-csv csv->test-map)
-   :subject-namespace (path->namespace path)
-   :relative-path     path})
-
-(defn- set-up-test! [{:as state :keys [result]} {:keys [relative-path subject-namespace test]} ]
+(defn- set-up-test! [state {:keys [relative-path subject-namespace test]}]
   (binding [*ns* (find-ns 'house.jux--.test.twodee--)] ; TODO: find a cleaner way. This can be any ns just to set the root binding of *ns*
-    (let [require-sheet-paths (get-require-sheet-paths relative-path)
-          test-namespace      (symbol subject-namespace)]
-      (init-requires test-namespace require-sheet-paths)
-      (assoc state :result (run-test! result test))
-      (str "Test passed:" relative-path))))
+    (let [require-sheets-path (get-require-sheets-path relative-path)
+          test-namespace      (symbol subject-namespace)
+          _                   (init-requires test-namespace require-sheets-path)
+          new-state           (run-test! state test)]
+      (prn "Test passed:" relative-path)
+      new-state)))
 
-(defn- init-test! [state file]
-  (->> file
-      .getPath
-      ->test
-      (set-up-test! state)))
+(defn- ->test [subject-namespace file]
+  (let [path (.getPath file)]
+    {:test              (-> path parse-csv csv->test-map)
+     :relative-path     path
+     :subject-namespace subject-namespace}))
+
+(defn- init-test! [state subject-namespace file]
+  (set-up-test! state (->test subject-namespace file)))
 
 (defn- sorted-files [directory]
   (->> directory .listFiles (sort-by #(.getName %))))
 
+(defn- corresponding-folder [file-list file]
+  (->> file-list
+       (filter (fn [f]
+                 (= (.getName file)
+                    (str (.getName f) ".csv"))))
+       first))
+
+(defn- folder-test-files [files]
+  (->> files
+       (remove #(.isDirectory %))
+       (remove #(= "require.csv" (.getName %)))))
+
 (defn- run-tests-in-folder! [state subject-namespace folder]
-  (let [children (seq (sorted-files folder))]
-    filtrar csv->test-map
-    state-novo = (rodar state)
-    se tiver dir c mesmo nome, fazer recursao com esse dir e state-novo
-    #_(run! (fn [file]
-              (if (.isDirectory file)
-                (run-tests-in-folder! state subject-namespace file)
-                (init-test! state file)))
-            children)))
+  (let [children   (sorted-files folder)]
+    ;; filtrar csv
+    ;; state-novo = (rodar state)
+    ;; se tiver dir c mesmo nome, fazer recursao com esse dir e state-novo
+    (run! (fn [file]
+            (let [new-state (init-test! state subject-namespace file)]
+              (when-let [folder (corresponding-folder children file)]
+                (run-tests-in-folder! new-state subject-namespace folder))))
+          (folder-test-files children))))
 
 (defn- run-tests-in-namespace! [namespace-folder]
-  (let [subject-namespace (resolve... namespace-folder)
-        empty-state nil]
-    (run! run-tests-in-folder! empty-state subject-namespace namespace-folder)
-    
-    #_(reduce (fn [state file]
-              (if (.isDirectory file)
-                (run-tests! state file)
-                (init-test! state file))) 
-            state
-            children)))
+  (let [subject-namespace (-> namespace-folder .getName symbol)
+        empty-state       nil]
+    (run-tests-in-folder! empty-state subject-namespace namespace-folder)))
 
 (defn- namespace-folders []
   (->> all-spreadsheets-folder sorted-files (filter #(.isDirectory %))))

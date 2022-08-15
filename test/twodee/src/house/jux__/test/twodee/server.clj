@@ -22,7 +22,7 @@
 (defn- save-and-run [_endpoint _user {:keys [filename spreadsheet-data]}]
   (when filename
     (csv/write! twodee/all-spreadsheets-folder filename spreadsheet-data))
-  (twodee/run-tests!))
+  (twodee/run-all-tests!))
 
 (defn- file-tree [file]
   (cond-> {:name (.getName file)}
