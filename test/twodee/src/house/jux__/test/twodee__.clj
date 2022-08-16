@@ -200,21 +200,19 @@
     (execute-queries initial-state initial-query-results-line queries initial-results)
     (reduce (partial execute-step queries) initial-state steps)))
 
+(defn- accumulate-require-sheet-path [acc path]
+  (let [new-path     (if (string/blank? (:path acc))
+                       path
+                       (str (:path acc) "/" path))
+        acc          (assoc acc :path new-path)
+        require-path (str new-path "/require.csv")]
+    (if (-> require-path java.io/file .exists)
+      (update acc :requires (fnil conj []) require-path)
+      acc)))
+
 (defn- get-require-sheets-path [test-path]
   (let [paths (-> test-path (string/split #"/") drop-last)]
-    (->> paths
-         (reduce (fn [acc cv]
-                   (let [new-path (if (string/blank? (:path acc))
-                                    cv
-                                    (str (:path acc) "/" cv))
-                         require-file (str new-path "/require.csv")
-                         acc (assoc acc :path new-path)]
-                     (if (-> require-file java.io/file .exists)
-                       (update-in acc [:requires] conj require-file)
-                       acc)))
-                 {:path     nil
-                  :requires []})
-         :requires)))
+    (:requires (reduce accumulate-require-sheet-path {} paths))))
 
 (defn- init-test! [state subject-namespace file]
   (binding [*ns* (find-ns 'house.jux--.test.twodee--)] ; TODO: find a cleaner way. This can be any ns just to set the root binding of *ns*
