@@ -216,32 +216,24 @@
                   :requires []})
          :requires)))
 
-(defn- set-up-test! [state {:keys [relative-path subject-namespace test]}]
+(defn- init-test! [state subject-namespace file]
   (binding [*ns* (find-ns 'house.jux--.test.twodee--)] ; TODO: find a cleaner way. This can be any ns just to set the root binding of *ns*
-    (let [require-sheets-path (get-require-sheets-path relative-path)
+    (let [relative-path       (.getPath file)
+          test-map            (-> relative-path parse-csv csv->test-map)
+          require-sheets-path (get-require-sheets-path relative-path)
           test-namespace      (symbol subject-namespace)
           _                   (init-requires test-namespace require-sheets-path)
-          new-state           (run-test! state test)]
+          new-state           (run-test! state test-map)]
       (prn "Test passed:" relative-path)
       new-state)))
-
-(defn- ->test [subject-namespace file]
-  (let [path (.getPath file)]
-    {:test              (-> path parse-csv csv->test-map)
-     :relative-path     path
-     :subject-namespace subject-namespace}))
-
-(defn- init-test! [state subject-namespace file]
-  (set-up-test! state (->test subject-namespace file)))
 
 (defn- sorted-files [directory]
   (->> directory .listFiles (sort-by #(.getName %))))
 
 (defn- corresponding-folder [file-list file]
   (->> file-list
-       (filter (fn [f]
-                 (= (.getName file)
-                    (str (.getName f) ".csv"))))
+       (filter #(= (.getName file)
+                   (str (.getName %) ".csv")))
        first))
 
 (defn- folder-test-files [files]
