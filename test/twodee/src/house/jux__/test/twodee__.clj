@@ -4,14 +4,14 @@
             [clojure.string :as string]
             [simple.check2 :refer [check]]))
 
-(def previous-query-results (atom nil))
+(def previous-query-results (atom nil)) ;; TODO: remove this atom
 (def all-spreadsheets-folder (java.io/file "test/twodtest"))
 
 (defn parse-csv [sheet-path]
   (let [reader (slurp sheet-path)]
     (csv/read-csv reader)))
 
-(defn- require->refers [require-sheet-path]
+(defn- parse-requires [require-sheet-path]
   (->> (parse-csv require-sheet-path)
        (into {})))
 
@@ -21,9 +21,9 @@
         refers (vec (map symbol refers))]
     (eval `(ns ~namespace (:require [~req :refer ~refers])))))
 
-(defn- eval-requires [namespace require-sheet-path]
-  (doseq [[req ref] (require->refers require-sheet-path)]
-    (eval-require namespace req ref))
+(defn- eval-requires [namespace requires]
+  (doseq [[require refers] requires]
+    (eval-require namespace require refers))
   (eval-require namespace "clojure.test" "is"))
 
 (def query-line? (comp #{""} first))
@@ -82,13 +82,20 @@
                                :column "D"}}
      :query-results parsed-query-results}))
 
+(defn- ->initial-step [step]
+  (-> step
+      (assoc-in [:command :user] "nil")
+      (assoc-in [:command :function] "(fn [state & _ignored] state)")
+      (assoc-in [:command :result] "*")))
+
 (defn- steps [structure]
   (let [query-line-count (count (filter query-line? structure))
-        starting-line    (+ query-line-count 2)]
-    (->> structure
-         (drop starting-line)
-         (map-indexed (partial step->map (inc starting-line)))
-         doall)))
+        starting-line    (inc query-line-count)
+        raw-steps        (->> structure
+                              (drop starting-line)
+                              (map-indexed (partial step->map (inc starting-line)))
+                              vec)]
+    (update raw-steps 0 ->initial-step)))
 
 (defn- check-blank-lines! [parsed-csv]
   (->> parsed-csv
@@ -104,8 +111,9 @@
 ;;  :queries [["ann" "existing-profile" ":email"]
 ;;            ["ann" "existing-profile" ":name"]
 ;;            ["ann" "existing-profile" ":given-name"]]
-;;  :initial-results ["nil" "nil" "nil"]
-;;  :steps [{:command {:user ":clock" :function "set-date" :params "\"2020-01-01\"" :result ""}
+;;  :steps [{:command {:user "nil" :function nop :params "" :result "*"}
+;;           :query-results ["nil" "nil" "nil"]}
+;;          {:command {:user ":clock" :function "set-date" :params "\"2020-01-01\"" :result ""}
 ;;           :query-results ["" "" ""]}
 ;;          {:command {:user "ann" :function "sign-in" :params "{:name \"Ann A Smith\" :given-name \"Annabelle\" :family-name \"Smith\" :locale \"pt\"}" :result "*"}
 ;;           :query-results ["ann" "\"Ann A Smith\"" "\"Annabelle\""]}
@@ -116,13 +124,11 @@
   (let [title           (-> parsed-csv first first)
         queries         (queries parsed-csv)
         initial-state   (initial-state parsed-csv)
-        initial-results (initial-results parsed-csv)
-        _               (reset! previous-query-results initial-results)
+        _               (reset! previous-query-results (initial-results parsed-csv))
         steps           (steps parsed-csv)]
     {:title           title
      :initial-state   initial-state
      :queries         queries
-     :initial-results initial-results
      :steps           steps}))
 
 (defn- execute-segment [value segment]
@@ -163,8 +169,8 @@
 
 (defn- execute-command [state {:keys [function user params result result-coords]}]
   (let [new-state (if (string/blank? params)
-                    (eval (list (symbol function) state (read-string user)))
-                    (eval (list (symbol function) state (read-string user) (read-string params))))]
+                    (eval (list (read-string function) state (read-string user)))
+                    (eval (list (read-string function) state (read-string user) (read-string params))))]
     (when-not (= result "*")
       (check-command-result! result result-coords)
       (check (contains? new-state :result) "Command did not return a result")
@@ -180,99 +186,66 @@
 (defn- require-namespace-refer-all [namespace required-namespace]
   (eval `(ns ~namespace (:require [~required-namespace :refer :all]))))
 
-(defn- init-requires [subject-namespace require-sheet-paths]
+(defn- init-requires [subject-namespace all-requirements]
   (let [namespace 'tmp.twodtests]
     (remove-ns namespace)
-    (require-namespace-refer-all namespace subject-namespace)
-    (when-not (empty? require-sheet-paths)
-      (doseq [require-sheet-path require-sheet-paths]
-        (eval-requires namespace require-sheet-path)))))
+    (require-namespace-refer-all namespace (symbol subject-namespace))
+    (doseq [requirements all-requirements]
+      (eval-requires namespace requirements))))
 
-(defn- run-test! [previous-state {:keys [initial-state initial-results queries steps]}]
-  (let [initial-state (read-string initial-state)
-        initial-state (if (= initial-state "[parent]")
+(defn- run-test [previous-state {:keys [initial-state queries steps]}]
+  (let [initial-state (if (= initial-state "[parent]")
                         previous-state
-                        initial-state)
-        initial-query-results-line (->> queries
-                                        (map count)
-                                        (apply max)
-                                        (+ 2))]
-    (execute-queries initial-state initial-query-results-line queries initial-results)
+                        (read-string initial-state))]
     (reduce (partial execute-step queries) initial-state steps)))
 
-(defn- accumulate-require-sheet-path [acc path]
-  (let [new-path     (if (string/blank? (:path acc))
-                       path
-                       (str (:path acc) "/" path))
-        acc          (assoc acc :path new-path)
-        require-path (str new-path "/require.csv")]
-    (if (-> require-path java.io/file .exists)
-      (update acc :requires (fnil conj []) require-path)
-      acc)))
-
-(defn- get-require-sheets-path [test-path]
-  (let [paths (-> test-path (string/split #"/") drop-last)]
-    (:requires (reduce accumulate-require-sheet-path {} paths))))
-
-(defn- init-test! [state subject-namespace file]
+(defn- run-test-in-file! [{:as context :keys [all-requirements state]} subject-namespace file]
   (binding [*ns* (find-ns 'house.jux--.test.twodee--)] ; TODO: find a cleaner way. This can be any ns just to set the root binding of *ns*
     (let [relative-path       (.getPath file)
           test-map            (-> relative-path parse-csv csv->test-map)
-          require-sheets-path (get-require-sheets-path relative-path)
-          test-namespace      (symbol subject-namespace)
-          _                   (init-requires test-namespace require-sheets-path)
-          new-state           (run-test! state test-map)]
+          _                   (init-requires subject-namespace all-requirements)
+          new-state           (run-test state test-map)]
       (prn "Test passed:" relative-path)
-      new-state)))
+      (assoc context :state new-state))))
 
 (defn- sorted-files [directory]
   (->> directory .listFiles (sort-by #(.getName %))))
 
-(defn- corresponding-folder [file-list file]
-  (->> file-list
-       (filter #(= (.getName file)
-                   (str (.getName %) ".csv")))
-       first))
+(defn- corresponding-subfolder [file-list file]
+  (let [target-name (string/replace (.getName file) #".csv" "")]
+    (->> file-list
+         (filter #(= (.getName %) target-name))
+         first)))
 
 (defn- folder-test-files [files]
   (->> files
        (remove #(.isDirectory %))
        (remove #(= "require.csv" (.getName %)))))
 
-(defn- run-tests-in-folder! [state subject-namespace folder]
-  (let [children   (sorted-files folder)]
-    ;; filtrar csv
-    ;; state-novo = (rodar state)
-    ;; se tiver dir c mesmo nome, fazer recursao com esse dir e state-novo
-    (run! (fn [file]
-            (let [new-state (init-test! state subject-namespace file)]
-              (when-let [folder (corresponding-folder children file)]
-                (run-tests-in-folder! new-state subject-namespace folder))))
-          (folder-test-files children))))
+(defn- requirements [folder]
+  (let [requires-file (java.io/file folder "require.csv")]
+    (if (.exists requires-file)
+      (parse-requires requires-file)
+      nil)))
+
+(defn- run-tests-in-folder! [parent-context subject-namespace folder]
+  (let [requirements (requirements folder)
+        context      (cond-> parent-context
+                       requirements (update :all-requirements (fnil conj []) requirements))
+        children     (sorted-files folder)]
+    (->> (folder-test-files children)
+         (run! (fn [file]
+                 (let [new-context (run-test-in-file! context subject-namespace file)]
+                   (when-let [subfolder (corresponding-subfolder children file)]
+                     (run-tests-in-folder! new-context subject-namespace subfolder))))))))
 
 (defn- run-tests-in-namespace! [namespace-folder]
   (let [subject-namespace (-> namespace-folder .getName symbol)
-        empty-state       nil]
-    (run-tests-in-folder! empty-state subject-namespace namespace-folder)))
+        empty-context     nil]
+    (run-tests-in-folder! empty-context subject-namespace namespace-folder)))
 
 (defn- namespace-folders []
   (->> all-spreadsheets-folder sorted-files (filter #(.isDirectory %))))
 
 (defn run-all-tests! []
   (run! run-tests-in-namespace! (namespace-folders)))
-
-;; Read all files:
-;; path->test
-;; {"appraise.biz/ann-signed-in"                   {:spreadsheet-data [["Ann signed in" ...]]}
-;;  "appraise.biz/ann-signed-in/three-member-team" {:spreadsheet-data [[...]]}}
-
-;; Parse test csv. Assoc keys to test:
-;; {...
-;;  :subject-namespace "appraise.biz"
-;;  :test {...}}
-
-;; Sort by path and run! Assoc result to test:
-;; {...
-;;  :result v}
-
-;; Add path to ex-info

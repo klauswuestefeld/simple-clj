@@ -19,10 +19,13 @@
       (resource-response "house/jux__/test/twodee/index.html")
       (delegate request))))
 
-(defn- save-and-run [_endpoint _user {:keys [filename spreadsheet-data]}]
+(defn- run-tests [_endpoint _user _]
+  (twodee/run-all-tests!))
+
+(defn- save-and-run [endpoint user {:keys [filename spreadsheet-data] :as params}]
   (when filename
     (csv/write! twodee/all-spreadsheets-folder filename spreadsheet-data))
-  (twodee/run-all-tests!))
+  (run-tests endpoint user params))
 
 (defn- file-tree [file]
   (cond-> {:name (.getName file)}
@@ -43,6 +46,7 @@
               (api/wrap-api "/api/get-test-tree" test-tree {:anonymous? true})
               (api/wrap-api "/api/csv-read"  csv-read {:anonymous? true})
               (api/wrap-api "/api/save-and-run" save-and-run {:anonymous? true})
+              (api/wrap-api "/api/run" run-tests {:anonymous? true})
               (wrap-exceptions)
               (wrap-pprint)
               (wrap-keyword-params)
