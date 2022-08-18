@@ -220,7 +220,8 @@
 (defn- folder-test-files [files]
   (->> files
        (remove #(.isDirectory %))
-       (remove #(= "require.csv" (.getName %)))))
+       (remove #(= "require.csv" (.getName %)))
+       (remove #(string/ends-with? % ".edn"))))
 
 (defn- requirements [folder]
   (let [requires-file (java.io/file folder "require.csv")]

@@ -44,9 +44,9 @@
   let jspreadsheetObj;
   let currentFilePath = null;
 
-  function loadJSpreadsheet(data) {
-    jspreadsheetObj = jspreadsheet(document.getElementById("twodee-spreadsheet"), {
-      data,
+  function loadJSpreadsheet(spreadsheet) {
+    const jspreadsheetPayload = {
+      data: spreadsheet.data,
       onevent: function (event, a, b, c, d, e, f) {
         // console.log(event, a, b, c, d, e, f);
       },
@@ -59,7 +59,11 @@
       onchange: function (event) {
         saveSpreadsheetAndRunTests();
       },
-    });
+    }
+    if (spreadsheet?.dimensions?.columns) {
+      jspreadsheetPayload.columns = spreadsheet.dimensions.columns;
+    }
+    jspreadsheetObj = jspreadsheet(document.getElementById("twodee-spreadsheet"), jspreadsheetPayload);
   }
 
   function clearErrorHighlights() {
@@ -118,8 +122,16 @@
   }
 
   async function runTests() {
+    alertTestsRunning();
+
     const response = await fetch("/api/run");
     await handleTestResponse(response);
+  }
+
+  function getSpreadsheetDimensions() {
+    const columns = [];
+    jspreadsheetObj.colgroup.forEach(col => columns.push( { width: Number(col.width) }));
+    return { columns };
   }
 
   async function saveSpreadsheetAndRunTests() {
@@ -130,7 +142,8 @@
       method: "POST",
       body: JSON.stringify({
         "spreadsheet-data": jspreadsheetObj?.getData(),
-        filename: currentFilePath
+        filename: currentFilePath,
+        "spreadsheet-dimensions": getSpreadsheetDimensions(),
       }),
     });
 
@@ -151,20 +164,20 @@
     });
 
     if (response.ok) {
-      const data = await response.json();
+      const responseJson = await response.json();
 
-      return data;
+      return responseJson;
     }
   }
 
   async function loadTestSpreadsheet(filePath) {
-    const data = await getSpreadsheet(filePath);
+    const spreadsheet = await getSpreadsheet(filePath);
 
     const spreadsheetDOMElement = document.querySelector("#twodee-spreadsheet");
     Array.from(spreadsheetDOMElement?.children)?.forEach(child => child.remove());
     removeTestStatusAlert();
 
-    loadJSpreadsheet(data);
+    loadJSpreadsheet(spreadsheet);
     currentFilePath = filePath;
   }
 

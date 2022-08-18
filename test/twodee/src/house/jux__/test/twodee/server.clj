@@ -22,10 +22,13 @@
 (defn- run-tests [_endpoint _user _]
   (twodee/run-all-tests!))
 
-(defn- save-and-run [endpoint user {:keys [filename spreadsheet-data] :as params}]
-  (when filename
-    (csv/write! twodee/all-spreadsheets-folder filename spreadsheet-data))
-  (run-tests endpoint user params))
+(defn- save-and-run [endpoint user {:keys [filename spreadsheet-data spreadsheet-dimensions] :as params}]
+  (let [relative-path (str twodee/all-spreadsheets-folder filename)
+        edn-filename  (str relative-path ".edn")]
+    (when filename
+      (csv/write! relative-path spreadsheet-data))
+    (spit edn-filename spreadsheet-dimensions)
+    (run-tests endpoint user params)))
 
 (defn- file-tree [file]
   (cond-> {:name (.getName file)}
@@ -35,7 +38,10 @@
   (file-tree (clojure.java.io/file twodee/all-spreadsheets-folder)))
 
 (defn- csv-read [_endpoint _user {:keys [filename]}]
-  (csv/read! twodee/all-spreadsheets-folder filename nil nil nil))
+  (let [relative-path (str twodee/all-spreadsheets-folder filename)
+        edn-filename  (str relative-path ".edn")]
+    (cond-> {:data (csv/read! relative-path)}
+      (-> edn-filename java.io/file .exists) (assoc :dimensions (-> edn-filename slurp read-string)))))
 
 (defonce server (atom nil))
 (defn restart! []

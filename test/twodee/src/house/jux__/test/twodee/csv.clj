@@ -4,12 +4,12 @@
             [clojure.java.io :as io]))
 
 (defn read!
-  [base-dir file-name _ _ _]
-  (with-open [reader (io/reader (str base-dir file-name))]
+  [relative-path]
+  (with-open [reader (io/reader relative-path)]
     (doall
      (csv/read-csv reader))))
 
 (defn write!
-  [base-dir file-name lines]
-  (with-open [writer (io/writer (str base-dir file-name))]
+  [relative-path lines]
+  (with-open [writer (io/writer relative-path)]
     (csv/write-csv writer lines)))
