@@ -57,8 +57,7 @@
         removeTestStatusAlert();
       },
       onchange: function (event) {
-        removeTestStatusAlert();
-        clearErrorHighlights();
+        saveSpreadsheetAndRunTests();
       },
     });
   }
