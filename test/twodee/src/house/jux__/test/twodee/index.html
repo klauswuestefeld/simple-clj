@@ -150,6 +150,29 @@
     await handleTestResponse(response);
   }
 
+  function openDetails(element) {
+    const details = element.parentElement;
+    details.open = true;
+    if (details.id !== "twodtest") {
+      openDetails(details);
+    }
+  }
+
+  function getSelectedTest() {
+    const selectedTestId = localStorage.getItem("selected-test");
+    if (!selectedTestId) {
+      return;
+    }
+    
+    const selectedTest = document.getElementById(selectedTestId);
+    openDetails(selectedTest);
+    selectedTest.click();
+  }
+
+  function setSelectedTest(id) {
+    localStorage.setItem("selected-test", id);
+  }
+
   function highlightSelectedTest(element) {
     const selectableElements = document.querySelectorAll("details p");
     selectableElements.forEach(selectableElement => selectableElement.classList.remove("selected-test"));
@@ -208,6 +231,7 @@
       el.children.forEach(el => appendElementToMenu(details, el));
     } else {
       const p = document.createElement("p");
+      p.id = el.name;
       p.textContent = el.name;
       p.style.cursor = "pointer";
 
@@ -217,6 +241,7 @@
 
       p.addEventListener("click", (_ev) => {
         loadTestSpreadsheet(filePath);
+        setSelectedTest(p.id);
         highlightSelectedTest(p);
       });
     }
@@ -233,6 +258,7 @@
       const menu = document.querySelector("#menu-div");
       menu.style.display = "block";
       appendElementToMenu(menu, tree);
+      getSelectedTest();
     }
   }
 
