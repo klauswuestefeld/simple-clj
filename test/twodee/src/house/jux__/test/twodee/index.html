@@ -59,9 +59,13 @@
       onchange: function (event) {
         saveSpreadsheetAndRunTests();
       },
+      rowResize: true,
     }
-    if (spreadsheet?.dimensions?.columns) {
+    if (spreadsheet.dimensions.columns) {
       jspreadsheetPayload.columns = spreadsheet.dimensions.columns;
+    }
+    if (spreadsheet.dimensions.rows) {
+      jspreadsheetPayload.rows = spreadsheet.dimensions.rows;
     }
     jspreadsheetObj = jspreadsheet(document.getElementById("twodee-spreadsheet"), jspreadsheetPayload);
   }
@@ -135,8 +139,15 @@
 
   function getSpreadsheetDimensions() {
     const columns = [];
-    jspreadsheetObj.colgroup.forEach(col => columns.push( { width: Number(col.width) }));
-    return { columns };
+    jspreadsheetObj.colgroup.forEach(col => columns.push({ width: Number(col.width) }));
+
+    const rows = {};
+    jspreadsheetObj.rows.forEach((row, i) => {
+      const settedHeight = row.getAttribute('height');
+      rows[i] = { height: settedHeight ? settedHeight + 'px' : '' };
+    });
+
+    return { columns, rows };
   }
 
   async function saveSpreadsheetAndRunTests() {
