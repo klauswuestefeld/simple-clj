@@ -221,7 +221,7 @@
   (->> files
        (remove #(.isDirectory %))
        (remove #(= "require.csv" (.getName %)))
-       (remove #(string/ends-with? % ".edn"))))
+       (remove #(string/ends-with? % ".layout.edn"))))
 
 (defn- requirements [folder]
   (let [requires-file (java.io/file folder "require.csv")]
