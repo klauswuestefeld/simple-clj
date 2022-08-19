@@ -205,11 +205,9 @@
   (binding [*ns* (find-ns 'house.jux--.test.twodee--)
             *test-spreadsheet* (.getName file)] ; TODO: find a cleaner way. This can be any ns just to set the root binding of *ns*
     (let [relative-path       (.getPath file)
-          test-map            (-> relative-path parse-csv csv->test-map)
-          _                   (init-requires subject-namespace all-requirements)
-          new-state           (run-test state test-map)]
-      (prn "Test passed:" relative-path)
-      (assoc context :state new-state))))
+          test-map            (-> relative-path parse-csv csv->test-map)]
+      (init-requires subject-namespace all-requirements)
+      (assoc context :state (run-test state test-map)))))
 
 (defn- sorted-files [directory]
   (->> directory .listFiles (sort-by #(.getName %))))

@@ -15,4 +15,6 @@
                  [house.jux/http.exceptions "2022.08.03-SNAPSHOT"]
                  [house.jux/http.pprint "2022.08.03-SNAPSHOT"]]
 
-  :repositories [["clojars" {:sign-releases false}]])
+  :repositories [["clojars" {:sign-releases false}]]
+  
+  :test-paths ["test"])

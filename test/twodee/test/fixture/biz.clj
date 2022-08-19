@@ -1,4 +1,4 @@
-(ns test-namespace.biz)
+(ns fixture.biz)
 
 (defn create-new-profile [state user profile]
   (let [state (->> (assoc profile :created-by user)

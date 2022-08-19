@@ -1,3 +1,3 @@
-(ns test-namespace.vars)
+(ns fixture.vars)
 
 (def tester (keyword "tester"))

@@ -1,10 +1,10 @@
-(ns twodee.test.twodee-test
+(ns unit.twodee-test
   (:require [clojure.test :refer [deftest is]]
             [house.jux--.test.twodee-- :as subject]))
 
 (def parsed-csv
-  (subject/parse-csv "test/twodtest/test-namespace.biz/create-new-profile.csv"))
-
+  (subject/parse-csv "test/twodtest/fixture.biz/create-new-profile.csv"))
+;; TODO: fix the following test
 (deftest building-test-map
   (is (= {:title "An user can create a new profile",
           :initial-state "{}",
@@ -14,9 +14,15 @@
            ["tester" "created-profile" ":age"]
            ["tester" "created-profile" ":created-by"]
            ["tester" "created-profile" ":last-updated-by"]],
-          :initial-results ["nil" "nil" "nil" "nil" "nil"],
           :steps
           [{:command
+            {:user "nil",
+             :function "(fn [state & _ignored] state)",
+             :params "",
+             :result "*",
+             :result-coords {:line 5, :column "D"}},
+            :query-results ["nil" "nil" "nil" "nil" "nil"]}
+           {:command
             {:user "tester",
              :function "create-new-profile",
              :params "{:name  \"New User\"  :phone 444 :age 40 }",
