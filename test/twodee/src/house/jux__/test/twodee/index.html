@@ -61,10 +61,10 @@
       },
       rowResize: true,
     }
-    if (spreadsheet.dimensions.columns) {
+    if (spreadsheet?.dimensions?.columns) {
       jspreadsheetPayload.columns = spreadsheet.dimensions.columns;
     }
-    if (spreadsheet.dimensions.rows) {
+    if (spreadsheet?.dimensions?.rows) {
       jspreadsheetPayload.rows = spreadsheet.dimensions.rows;
     }
     jspreadsheetObj = jspreadsheet(document.getElementById("twodee-spreadsheet"), jspreadsheetPayload);
