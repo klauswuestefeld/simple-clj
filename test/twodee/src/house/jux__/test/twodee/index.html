@@ -110,8 +110,13 @@
       const jsonResponse = await response.json();
       if (jsonResponse["ex-data"]) {
         const cell = jsonResponse["ex-data"].column + jsonResponse["ex-data"].line;
+
+        const spreadsheetElement = document.getElementById(jsonResponse["ex-data"].spreadsheet);
+        await handleTestSelection(spreadsheetElement);
+
         const cellDOMElement = jspreadsheetObj.getCell(cell);
         cellDOMElement.style.backgroundColor = "lightpink";
+
         alert(jsonResponse.message + "\nCell " + cell);
       } else {
         alert(jsonResponse.message);
@@ -163,7 +168,7 @@
     if (!selectedTestId) {
       return;
     }
-    
+
     const selectedTest = document.getElementById(selectedTestId);
     openDetails(selectedTest);
     selectedTest.click();
@@ -214,6 +219,13 @@
     return getMenuItemFilePath(element.parentElement, path);
   }
 
+  async function handleTestSelection(element) {
+    const filePath = element.getAttribute('file-path');
+    await loadTestSpreadsheet(filePath);
+    setSelectedTest(element.id);
+    highlightSelectedTest(element);
+  }
+
   function appendElementToMenu(menu, el) {
     const isDirectory = el.children;
     if (isDirectory) {
@@ -238,12 +250,9 @@
       menu.appendChild(p);
 
       const filePath = getMenuItemFilePath(p, "/" + el.name);
+      p.setAttribute("file-path", filePath);
 
-      p.addEventListener("click", (_ev) => {
-        loadTestSpreadsheet(filePath);
-        setSelectedTest(p.id);
-        highlightSelectedTest(p);
-      });
+      p.addEventListener("click", (_ev) => handleTestSelection(p));
     }
   }
 

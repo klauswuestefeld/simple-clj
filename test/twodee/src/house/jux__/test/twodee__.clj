@@ -6,6 +6,7 @@
 
 (def previous-query-results (atom nil)) ;; TODO: remove this atom
 (def all-spreadsheets-folder (java.io/file "test/twodtest"))
+(def ^:dynamic *test-spreadsheet*)
 
 (defn parse-csv [sheet-path]
   (let [reader (slurp sheet-path)]
@@ -65,7 +66,8 @@
 
 (defn- check-cell! [condition otherwise-msg coords]
   (when-not condition
-    (throw (ex-info otherwise-msg coords))))
+    (let [error-map (assoc coords :spreadsheet *test-spreadsheet*)]
+      (throw (ex-info otherwise-msg error-map)))))
 
 (defn- check-command-result! [result coords]
   (check-cell! (not (string/blank? result)) "Command result cannot be blank" coords))
@@ -200,7 +202,8 @@
     (reduce (partial execute-step queries) initial-state steps)))
 
 (defn- run-test-in-file! [{:as context :keys [all-requirements state]} subject-namespace file]
-  (binding [*ns* (find-ns 'house.jux--.test.twodee--)] ; TODO: find a cleaner way. This can be any ns just to set the root binding of *ns*
+  (binding [*ns* (find-ns 'house.jux--.test.twodee--)
+            *test-spreadsheet* (.getName file)] ; TODO: find a cleaner way. This can be any ns just to set the root binding of *ns*
     (let [relative-path       (.getPath file)
           test-map            (-> relative-path parse-csv csv->test-map)
           _                   (init-requires subject-namespace all-requirements)
