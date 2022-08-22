@@ -25,7 +25,7 @@
            {:command
             {:user "tester",
              :function "create-new-profile",
-             :params "{:name  \"New User\"  :phone 444 :age 40 }",
+             :params "{:name  \"New User\"   :phone 444 \n:age 40}",
              :result "*",
              :result-coords {:line 6, :column "D"}},
             :query-results ["\"New User\"" "444" "40" "tester" "nil"]}
