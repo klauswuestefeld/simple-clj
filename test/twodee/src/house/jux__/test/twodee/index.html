@@ -283,14 +283,14 @@
     }
   }
 
-  function overrideJspreadsheetKeyDownControls(ev) {
+  function replaceCtrlEnterWithAltEnter(ev) {
     if (ev.ctrlKey && ev.key === 'Enter') {
       ev.preventDefault();
       ev.stopPropagation();
       ev.target.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, altKey: true, which: 13 }));
     }
   }
-  document.body.addEventListener('keydown', overrideJspreadsheetKeyDownControls);
+  document.body.addEventListener('keydown', replaceCtrlEnterWithAltEnter);
 
   loadTestsTree();
   runTests();
