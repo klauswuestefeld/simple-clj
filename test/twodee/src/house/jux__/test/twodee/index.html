@@ -62,7 +62,13 @@
       oncreateworksheet: function (_event) {
         removeTestStatusAlert();
       },
-      onchange: function (event) {
+      onchange: function (_event) {
+        saveSpreadsheetAndRunTests();
+      },
+      onresizecolumn: function (_event) {
+        saveSpreadsheetAndRunTests();
+      },
+      onresizerow: function (_event) {
         saveSpreadsheetAndRunTests();
       },
       rowResize: true,
