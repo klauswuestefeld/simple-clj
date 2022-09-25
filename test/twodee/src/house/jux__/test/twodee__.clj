@@ -5,7 +5,7 @@
             [simple.check2 :refer [check]]))
 
 (def previous-query-results (atom nil)) ;; TODO: remove this atom
-(def all-spreadsheets-folder (java.io/file "test/twodeetest"))
+(def all-spreadsheets-folder (java.io/file "test/twodee"))
 (def ^:dynamic *test-spreadsheet*)
 
 (defn parse-csv [sheet-path]
@@ -189,7 +189,7 @@
   (eval `(ns ~namespace (:require [~required-namespace :refer :all]))))
 
 (defn- init-requires [subject-namespace all-requirements]
-  (let [namespace 'tmp.twodeetests]
+  (let [namespace 'tmp.twodees]
     (remove-ns namespace)
     (require-namespace-refer-all namespace (symbol subject-namespace))
     (doseq [requirements all-requirements]

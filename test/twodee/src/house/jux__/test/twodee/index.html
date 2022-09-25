@@ -181,7 +181,7 @@
   function openDetails(element) {
     const details = element.parentElement;
     details.open = true;
-    if (details.id !== "twodeetest") {
+    if (details.id !== "twodee") {
       openDetails(details);
     }
   }
@@ -233,7 +233,7 @@
   }
 
   function getMenuItemFilePath(element, path) {
-    if (element.parentElement.id === "twodeetest") {
+    if (element.parentElement.id === "twodee") {
       return path;
     }
 
