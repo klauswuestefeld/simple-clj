@@ -3,7 +3,7 @@
             [house.jux--.test.twodee-- :as subject]))
 
 (def parsed-csv
-  (subject/parse-csv "test/twodtest/fixture.biz/create-new-profile.csv"))
+  (subject/parse-csv "test/twodeetest/fixture.biz/create-new-profile.csv"))
 ;; TODO: fix the following test
 (deftest building-test-map
   (is (= {:title "An user can create a new profile",
