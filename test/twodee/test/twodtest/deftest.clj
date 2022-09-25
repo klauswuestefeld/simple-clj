@@ -1,6 +1,7 @@
 (ns twodtest.deftest
-  (:require [clojure.test :refer [deftest]]
+  (:require [clojure.test :refer [deftest is]]
             [house.jux--.test.twodee-- :as subject]))
 
 (deftest twodee-tests
-  (subject/run-all-tests!))
+  (is (= (subject/run-all-tests!)
+         :OK)))

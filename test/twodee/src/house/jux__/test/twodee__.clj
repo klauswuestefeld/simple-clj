@@ -250,4 +250,5 @@
   (->> all-spreadsheets-folder sorted-files (filter #(.isDirectory %))))
 
 (defn run-all-tests! []
-  (run! run-tests-in-namespace! (namespace-folders)))
+  (run! run-tests-in-namespace! (namespace-folders))
+  :OK)
