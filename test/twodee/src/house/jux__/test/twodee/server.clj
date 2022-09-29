@@ -4,6 +4,7 @@
             [house.jux--.http.exceptions-- :refer [wrap-exceptions]]
             [house.jux--.http.pprint-- :refer [wrap-pprint]]
             [clojure.java.io :as java.io]
+            [clojure.stacktrace :as stacktrace]
             [clojure.string :as string]
             [ring.middleware.keyword-params :refer [wrap-keyword-params]]
             [ring.middleware.params :refer [wrap-params]]
@@ -22,7 +23,13 @@
       (delegate request))))
 
 (defn- run-tests [_endpoint _user _]
-  (twodee/run-all-tests!))
+  (try
+    (twodee/run-all-tests!)
+    (catch RuntimeException e
+      (throw (if (ex-data e)
+               e
+               (ex-info (.getMessage e)
+                        {:stacktrace (with-out-str (stacktrace/print-cause-trace e))}))))))
 
 (defn- save-and-run [endpoint user {:keys [filename spreadsheet-data spreadsheet-dimensions] :as params}]
   (let [relative-path   (str twodee/all-spreadsheets-folder filename)]

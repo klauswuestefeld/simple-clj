@@ -93,6 +93,9 @@
   }
 
   function displayTestStatusAlert(message, textColor) {
+    const old = document.querySelector("#test-status-alert");
+    old?.remove();
+
     const alert = document.createElement("p");
     alert.id = "test-status-alert";
     alert.textContent = message;
@@ -105,45 +108,43 @@
     container.appendChild(alert);
   }
 
-  function removeTestStatusAlert() {
-    const alert = document.querySelector("#test-status-alert");
-    alert?.remove();
-  }
-
-  function alertTestsRunning() {
-    removeTestStatusAlert();
+  function indicateTestsRunning() {
     displayTestStatusAlert("Running tests...");
   }
 
-  function alertTestsPassed() {
-    removeTestStatusAlert();
-    displayTestStatusAlert("All tests passed", "green");
+  function indicateTestsPassed() {
+    displayTestStatusAlert("All tests passed (Just now)", "green");
+    setTimeout(() => {
+      displayTestStatusAlert("All tests passed", "green")
+    }, 3000);
   }
 
   async function handleTestResponse(response) {
-    if (!response.ok) {
-      removeTestStatusAlert();
-      const jsonResponse = await response.json();
-      if (jsonResponse["ex-data"]) {
-        const cell = jsonResponse["ex-data"].column + jsonResponse["ex-data"].line;
+    if (response.ok) {
+      indicateTestsPassed();
+    } else {
+      displayTestStatusAlert("Failure", "red");
+      const body = await response.json();
+      if (body["ex-data"] && body["ex-data"].column) {
+        const cell = body["ex-data"].column + body["ex-data"].line;
 
-        const spreadsheetElement = document.getElementById(jsonResponse["ex-data"].spreadsheet);
+        const spreadsheetElement = document.getElementById(body["ex-data"].spreadsheet);
         await handleTestSelection(spreadsheetElement);
 
         const cellDOMElement = jspreadsheetObj.getCell(cell);
         cellDOMElement.style.backgroundColor = "lightpink";
 
-        alert(jsonResponse.message + "\nCell " + cell);
+        alert(body.message + "\nCell " + cell);
+      } else if (body["ex-data"] && body["ex-data"].stacktrace) {
+        alert("Exception\n\n" + body["ex-data"].stacktrace)
       } else {
-        alert(jsonResponse.message);
+        alert(body.message);
       }
-    } else {
-      setTimeout(() => alertTestsPassed(), 600);
     }
   }
 
   async function runTests() {
-    alertTestsRunning();
+    indicateTestsRunning();
 
     const response = await fetch("/api/run");
     await handleTestResponse(response);
@@ -163,7 +164,7 @@
   }
 
   async function saveSpreadsheetAndRunTests() {
-    alertTestsRunning();
+    indicateTestsRunning();
     clearErrorHighlights();
 
     const response = await fetch("/api/save-and-run", {
@@ -215,9 +216,7 @@
     });
 
     if (response.ok) {
-      const responseJson = await response.json();
-
-      return responseJson;
+      return await response.json();
     }
   }
 
@@ -226,7 +225,7 @@
 
     const spreadsheetDOMElement = document.querySelector("#twodee-spreadsheet");
     Array.from(spreadsheetDOMElement?.children)?.forEach(child => child.remove());
-    removeTestStatusAlert();
+    displayTestStatusAlert("");
 
     loadJSpreadsheet(spreadsheet);
     currentFilePath = filePath;

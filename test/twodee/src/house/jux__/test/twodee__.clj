@@ -69,10 +69,6 @@
     (let [error-map (assoc coords :spreadsheet *test-spreadsheet*)]
       (throw (ex-info otherwise-msg error-map)))))
 
-(defn- check-command-result! [result coords]
-  (check-cell! (not (string/blank? result)) "Command result cannot be blank" coords))
-
-;; (initial-results ns-tests)
 
 (defn- step->map [starting-line line [user function params command-result & query-results]]
   (let [parsed-query-results (parse-query-results query-results)]
@@ -155,35 +151,71 @@
 (defn- query-column-idx->column [idx]
   (->column (+ 4 idx)))
 
-(defn- execute-query [state query-results-line query-column-number [user segment0 & segments] expected-result]
-  (let [result0 (eval (list (symbol segment0) state (symbol user)))
-        result  (if (string/blank? (first segments))
-                  result0
-                  (reduce execute-segment result0 segments))]
-    (compare-results {:column (query-column-idx->column query-column-number)
-                      :line   query-results-line} expected-result result)))
+(defn- exception->str [e]
+  (or (.getMessage e) (str (.getClass e))))
 
-(defn- execute-queries [state query-results-line queries results]
+(defn- query-result [state user [segment0 & segments]]
+  (try
+    (let [result0 (eval (list (symbol segment0) state (symbol user)))]
+      (reduce execute-segment result0 (remove string/blank? segments)))
+    (catch Exception e
+      (exception->str e))))
+
+(defn- execute-query [state query-results-line query-column-number [user & segments] expected-result]
+  (let [actual-result (query-result state user segments)]
+    (compare-results {:column (query-column-idx->column query-column-number)
+                      :line   query-results-line}
+                     expected-result
+                     actual-result)))
+
+(defn- check-queries! [state query-results-line queries results]
   (doseq [[idx [query result]] (->> results
                                     (map vector queries)
                                     (map-indexed vector))]
     (execute-query state query-results-line idx query result)))
 
+(defn- check-command-result! [coords expected new-state]
+  (check-cell! (not (string/blank? expected)) "Command result cannot be blank" coords)
+  (check-cell! (some? new-state) "Command returned nil. Must return a state map." coords)
+  (check-cell! (map? new-state) (str "Command returned a " (.getClass new-state) ". Must return a state map.") coords)
+  (let [actual (:result new-state)]
+    (when (and (instance? Exception actual) (not= expected "X"))
+      (compare-results coords expected (exception->str actual)))
+    (when-not (= expected "*")
+      (check-cell! (contains? new-state :result) (str "Command returned the state without a :result key.") coords)
+      (compare-results coords expected actual))))
+
+(defn- resolve-fn [function line]
+  (try
+    (eval (read-string function))
+    (catch Exception e
+      (check-cell! false (str "Unable to resolve function '" function "'") {:line line, :column "B"}))))
+
 (defn- execute-command [state {:keys [function user params result result-coords]}]
-  (let [new-state (if (string/blank? params)
-                    (eval (list (read-string function) state (read-string user)))
-                    (eval (list (read-string function) state (read-string user) (read-string params))))]
-    (when-not (= result "*")
-      (check-command-result! result result-coords)
-      (check (contains? new-state :result) "Command did not return a result")
-      (compare-results result-coords result (:result new-state)))
+  (let [function (resolve-fn function (:line result-coords))
+        expression (if (string/blank? params)
+                     (list function state (read-string user))
+                     (list function state (read-string user) (read-string params)))
+        new-state (try
+                    (eval expression)
+                    (catch Exception e
+                      (assoc state :result e)))]
+    (check-command-result! result-coords result new-state)
     new-state))
 
+(defn- line [command]
+  (-> command :result-coords :line))
+
 (defn- execute-step [queries state {:keys [command query-results]}]
-  (let [new-state (execute-command state command)
-        line      (-> command :result-coords :line)]
-    (execute-queries new-state line queries query-results)
+  (let [new-state (execute-command state command)]
+    (check-queries! new-state (line command) queries query-results)
     new-state))
+
+(defn- run-test [previous-state {:keys [initial-state queries steps]}]
+  (let [initial-state (if (= initial-state "[parent]")
+                        previous-state
+                        (read-string initial-state))]
+    (reduce (partial execute-step queries) initial-state steps)))
 
 (defn- require-namespace-refer-all [namespace required-namespace]
   (eval `(ns ~namespace (:require [~required-namespace :refer :all]))))
@@ -194,12 +226,6 @@
     (require-namespace-refer-all namespace (symbol subject-namespace))
     (doseq [requirements all-requirements]
       (eval-requires namespace requirements))))
-
-(defn- run-test [previous-state {:keys [initial-state queries steps]}]
-  (let [initial-state (if (= initial-state "[parent]")
-                        previous-state
-                        (read-string initial-state))]
-    (reduce (partial execute-step queries) initial-state steps)))
 
 (defn- run-test-in-file! [{:as context :keys [all-requirements state]} subject-namespace file]
   (binding [*ns* (find-ns 'house.jux--.test.twodee--)
