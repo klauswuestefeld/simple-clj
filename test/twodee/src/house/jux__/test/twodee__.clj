@@ -188,7 +188,7 @@
 (defn- resolve-fn [function line]
   (try
     (eval (read-string function))
-    (catch Exception e
+    (catch Exception _e
       (check-cell! false (str "Unable to resolve function '" function "'") {:line line, :column "B"}))))
 
 (defn- execute-command [state {:keys [function user params result result-coords]}]
@@ -215,6 +215,8 @@
   (let [initial-state (if (= initial-state "[parent]")
                         previous-state
                         (read-string initial-state))]
+    (check-cell! (map? initial-state) "Initial state must be a map." {:line (-> steps first :command line)
+                                                                      :column "A"})
     (reduce (partial execute-step queries) initial-state steps)))
 
 (defn- require-namespace-refer-all [namespace required-namespace]
