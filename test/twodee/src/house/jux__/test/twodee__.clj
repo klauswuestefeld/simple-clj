@@ -129,9 +129,6 @@
      :queries         queries
      :steps           steps}))
 
-(defn- execute-segment [value segment]
-  ((read-string segment) value))
-
 (defn- compare-results [{:keys [column line]} expected-result actual-result]
   (check-cell! (= (eval (read-string expected-result)) actual-result)
                (str "Actual result was:\n" (if (some? actual-result) actual-result "nil"))
@@ -154,16 +151,33 @@
 (defn- exception->str [e]
   (or (.getMessage e) (str (.getClass e))))
 
-(defn- query-result [state user [segment0 & segments]]
+(defn- quiet-eval [& forms]
   (try
-    (let [result0 (eval (list (symbol segment0) state (symbol user)))]
-      (reduce execute-segment result0 (remove string/blank? segments)))
+    (eval (apply list forms))
     (catch Exception e
-      (exception->str e))))
+      (throw (RuntimeException. (str forms " - " (exception->str e)))))))
+
+(defn- execute-segment [value segment]
+  (quiet-eval (read-string segment) value))
+
+(defn- resolve-fn [function-str column]
+  (try
+    (eval (symbol function-str))
+    (catch Exception _e
+      (check-cell! false (str "Unable to resolve function '" function-str "'") {:line 3, :column column}))))
+
+(defn- query-result [column state user [segment0 & segments]]
+  (let [function (resolve-fn segment0 column)]
+    (try
+      (let [result0 (quiet-eval function state (symbol user))]
+        (reduce execute-segment result0 (remove string/blank? segments)))
+      (catch Exception e
+        (str (exception->str e))))))
 
 (defn- execute-query [state query-results-line query-column-number [user & segments] expected-result]
-  (let [actual-result (query-result state user segments)]
-    (compare-results {:column (query-column-idx->column query-column-number)
+  (let [column (query-column-idx->column query-column-number)
+        actual-result (query-result column state user segments)]
+    (compare-results {:column column
                       :line   query-results-line}
                      expected-result
                      actual-result)))
@@ -185,14 +199,14 @@
       (check-cell! (contains? new-state :result) (str "Command returned the state without a :result key.") coords)
       (compare-results coords expected actual))))
 
-(defn- resolve-fn [function line]
+(defn- resolve-command-fn [function-str line]
   (try
-    (eval (read-string function))
+    (eval (read-string function-str))
     (catch Exception _e
-      (check-cell! false (str "Unable to resolve function '" function "'") {:line line, :column "B"}))))
+      (check-cell! false (str "Unable to resolve function '" function-str "'") {:line line, :column "B"}))))
 
 (defn- execute-command [state {:keys [function user params result result-coords]}]
-  (let [function (resolve-fn function (:line result-coords))
+  (let [function (resolve-command-fn function (:line result-coords))
         expression (if (string/blank? params)
                      (list function state (read-string user))
                      (list function state (read-string user) (read-string params)))
@@ -212,9 +226,11 @@
     new-state))
 
 (defn- run-test [previous-state {:keys [initial-state queries steps]}]
-  (let [initial-state (if (= initial-state "[parent]")
-                        previous-state
-                        (read-string initial-state))]
+  (let [coords {:line (-> steps first :command line)
+                :column "A"}
+        _ (check-cell! (or (nil? previous-state) (= initial-state "[parent]")) "Tests in subfolders must declare [parent] as their initial state. They start with the state produced by their parent test." coords)
+        initial-state (or previous-state
+                          (eval (read-string initial-state)))]
     (check-cell! (map? initial-state) "Initial state must be a map." {:line (-> steps first :command line)
                                                                       :column "A"})
     (reduce (partial execute-step queries) initial-state steps)))

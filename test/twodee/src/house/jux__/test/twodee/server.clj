@@ -74,4 +74,5 @@
                           :join? false})))
   (println "Twodee restarted. Listening on port" port))
 
-(restart!)
+(comment
+  (restart!))

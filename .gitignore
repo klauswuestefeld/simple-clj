@@ -14,3 +14,4 @@ checkouts/
 .calva
 .clj-kondo
 .lsp
+.vscode

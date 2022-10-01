@@ -1,4 +1,4 @@
-(ns twodee.deftest
+(ns twodee-deftest
   (:require [clojure.test :refer [deftest is]]
             [house.jux--.test.twodee-- :as subject]))
 
