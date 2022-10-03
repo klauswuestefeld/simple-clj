@@ -157,20 +157,6 @@
     (catch Exception _e
       (check-cell! false (str "Unable to resolve symbol '" function-str "'") {:line 3, :column column}))))
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 (defn- query-result [column state user [segment0 & segments]]
   ()
 
