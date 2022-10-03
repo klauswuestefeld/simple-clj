@@ -15,6 +15,9 @@
     (assoc state :result "Profile Updated")))
 
 (defn registered-profiles [state _user]
-  (if (:profile state)
-    1
-    0))
+  (if (:profile state) 1 0))
+
+(defn search-by-name [state _user name-arg]
+  (if (-> state :profile :name (= name-arg))
+    (:profile state)
+    nil))

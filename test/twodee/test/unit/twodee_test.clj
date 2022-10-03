@@ -6,8 +6,7 @@
   (subject/parse-csv "test/twodee/fixture.biz/create-new-profile.csv"))
 ;; TODO: fix the following test
 (deftest building-test-map
-  (is (= {:title "An user can create a new profile",
-          :initial-state "{}",
+  (is (= {:title "A user can create a new profile",
           :queries
           [["tester" "created-profile" ":name"]
            ["tester" "created-profile" ":phone"]

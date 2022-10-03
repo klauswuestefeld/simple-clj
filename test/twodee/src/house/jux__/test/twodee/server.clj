@@ -72,7 +72,7 @@
               (wrap-params)
               (run-jetty {:port  port
                           :join? false})))
-  (println "Twodee restarted. Listening on port" port))
+  (println (str "Twodee restarted. Listening on http://localhost:" port)))
 
 (comment
   (restart!))

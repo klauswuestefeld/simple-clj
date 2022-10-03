@@ -1,8 +1,8 @@
-An user can create a new profile,,,,,,,,
-,,,,tester,tester,tester,tester,tester
-,,,,created-profile,created-profile,created-profile,created-profile,created-profile
-,,,,:name,:phone,:age,:created-by,:last-updated-by
-{},,,,nil,nil,nil,nil,nil
-tester,create-new-profile,"{:name  ""New User""   :phone 444 
-:age 40}",*,"""New User""",444,40,tester,
-tester,update-profile,{:phone 555},*,,555,,,tester
+A user can create a new profile,,,,,,,,,
+,,,,tester,tester,tester,tester,tester,tester
+,,,,created-profile,created-profile,created-profile,created-profile,created-profile,"search-by-name ""Bob"""
+,,,,:name,:phone,:age,:created-by,:last-updated-by,:last-updated-by
+,,,,nil,nil,nil,nil,nil,nil
+tester,create-new-profile,"{:name  ""Bob""   :phone 444 
+:age 40}",*,"""Bob""",444,40,tester,,
+tester,update-profile,{:phone 555},*,,555,,,tester,tester

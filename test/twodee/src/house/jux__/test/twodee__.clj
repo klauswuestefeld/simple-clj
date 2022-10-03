@@ -1,8 +1,7 @@
 (ns house.jux--.test.twodee--
   (:require [clojure.data.csv :as csv]
             [clojure.java.io :as java.io]
-            [clojure.string :as string]
-            [simple.check2 :refer [check]]))
+            [clojure.string :as string]))
 
 (def previous-query-results (atom nil)) ;; TODO: remove this atom
 (def all-spreadsheets-folder (java.io/file "test/twodee"))
@@ -27,32 +26,19 @@
     (eval-require namespace require refers))
   (eval-require namespace "clojure.test" "is"))
 
-(def query-line? (comp #{""} first))
+(def first-column-blank? (comp #{""} first)) ; Description line and command lines do not have the first column blank.
 
 (defn- queries [structure]
   (->> structure
-       (filter query-line?)
+       (filter first-column-blank?)
+       drop-last                   ; The line with initial query values.
        (map (partial drop 4))
        (apply map vector)))
 
-;; (queries ns-tests)
-
-(defn- initial-state-line [structure]
-  (->> structure
-       rest
-       (remove query-line?)
-       first))
-
-;; (initial-state-line ns-tests)
-
-(defn- initial-state [structure]
-  (->> structure
-       initial-state-line
-       first))
-
 (defn- initial-results [structure]
   (->> structure
-       initial-state-line
+       (filter first-column-blank?)
+       last
        (drop 4)))
 
 (defn- parse-query-results [provided-results]
@@ -64,10 +50,19 @@
     (reset! previous-query-results result)
     result))
 
+(defn- exception->str [e]
+  (or (.getMessage e) (str (.getClass e))))
+
 (defn- check-cell! [condition otherwise-msg coords]
   (when-not condition
     (let [error-map (assoc coords :spreadsheet *test-spreadsheet*)]
       (throw (ex-info otherwise-msg error-map)))))
+
+(defn- check-cell-fn! [condition-fn otherwise-msg coords]
+  (try
+    (check-cell! (condition-fn) otherwise-msg coords)
+    (catch Exception e
+      (check-cell! false (exception->str e) coords))))
 
 
 (defn- step->map [starting-line line [user function params command-result & query-results]]
@@ -87,15 +82,15 @@
       (assoc-in [:command :result] "*")))
 
 (defn- steps [structure]
-  (let [query-line-count (count (filter query-line? structure))
-        starting-line    (inc query-line-count)
+  (let [starting-line (count (filter first-column-blank? structure))
         raw-steps        (->> structure
                               (drop starting-line)
                               (map-indexed (partial step->map (inc starting-line)))
                               vec)]
     (update raw-steps 0 ->initial-step)))
 
-(defn- check-blank-lines! [parsed-csv]
+(defn- check-blanks! [parsed-csv]
+  (check-cell! (not (string/blank? (-> parsed-csv first first))) "The test needs a description" {:column "A", :line 1})
   (->> parsed-csv
        (map-indexed (fn [line-number values]
                       (check-cell! (not (string/blank? (apply str values)))
@@ -105,7 +100,6 @@
        dorun))
 
 ;; {:title "Sign in returns email, name and picture."
-;;  :initial-state "{}"
 ;;  :queries [["ann" "existing-profile" ":email"]
 ;;            ["ann" "existing-profile" ":name"]
 ;;            ["ann" "existing-profile" ":given-name"]]
@@ -118,22 +112,22 @@
 ;;          {:command {:user "ann" :function "sign-in" :params "{:name \"Annn\" :picture \"http://pics.com/ann\"}" :result "*"}
 ;;           :query-results ["" "" ""]}]}
 (defn csv->test-map [parsed-csv]
-  (check-blank-lines! parsed-csv)
+  (check-blanks! parsed-csv)
   (let [title           (-> parsed-csv first first)
         queries         (queries parsed-csv)
-        initial-state   (initial-state parsed-csv)
         _               (reset! previous-query-results (initial-results parsed-csv))
         steps           (steps parsed-csv)]
     {:title           title
-     :initial-state   initial-state
      :queries         queries
      :steps           steps}))
 
 (defn- compare-results [{:keys [column line]} expected-result actual-result]
-  (check-cell! (= (eval (read-string expected-result)) actual-result)
-               (str "Actual result was:\n" (if (some? actual-result) actual-result "nil"))
-               {:column column
-                :line   line}))
+  (let [coords {:column column
+                :line   line}]
+    (check-cell! (not (string/blank? expected-result)) "Expected result cannot be blank" coords)
+    (check-cell-fn! #(= (eval (read-string expected-result)) actual-result)
+                    (str "Actual result was:\n" (if (some? actual-result) actual-result "nil"))
+                    coords)))
 
 (defn- ->letter [idx]
   (->> idx (nth "ABCDEFGHIJKLMNOPQRSTUVWXYZ") str))
@@ -148,9 +142,6 @@
 (defn- query-column-idx->column [idx]
   (->column (+ 4 idx)))
 
-(defn- exception->str [e]
-  (or (.getMessage e) (str (.getClass e))))
-
 (defn- quiet-eval [& forms]
   (try
     (eval (apply list forms))
@@ -164,9 +155,25 @@
   (try
     (eval (symbol function-str))
     (catch Exception _e
-      (check-cell! false (str "Unable to resolve function '" function-str "'") {:line 3, :column column}))))
+      (check-cell! false (str "Unable to resolve symbol '" function-str "'") {:line 3, :column column}))))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 (defn- query-result [column state user [segment0 & segments]]
+  ()
+
   (let [function (resolve-fn segment0 column)]
     (try
       (let [result0 (quiet-eval function state (symbol user))]
@@ -225,15 +232,8 @@
     (check-queries! new-state (line command) queries query-results)
     new-state))
 
-(defn- run-test [previous-state {:keys [initial-state queries steps]}]
-  (let [coords {:line (-> steps first :command line)
-                :column "A"}
-        _ (check-cell! (or (nil? previous-state) (= initial-state "[parent]")) "Tests in subfolders must declare [parent] as their initial state. They start with the state produced by their parent test." coords)
-        initial-state (or previous-state
-                          (eval (read-string initial-state)))]
-    (check-cell! (map? initial-state) "Initial state must be a map." {:line (-> steps first :command line)
-                                                                      :column "A"})
-    (reduce (partial execute-step queries) initial-state steps)))
+(defn- run-test [state {:keys [queries steps]}]
+  (reduce (partial execute-step queries) state steps))
 
 (defn- require-namespace-refer-all [namespace required-namespace]
   (eval `(ns ~namespace (:require [~required-namespace :refer :all]))))
@@ -287,7 +287,7 @@
 
 (defn- run-tests-in-namespace! [namespace-folder]
   (let [subject-namespace (-> namespace-folder .getName symbol)
-        empty-context     nil]
+        empty-context     {:state {}}]
     (run-tests-in-folder! empty-context subject-namespace namespace-folder)))
 
 (defn- namespace-folders []
