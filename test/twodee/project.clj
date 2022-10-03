@@ -14,7 +14,6 @@
                  [org.clojure/data.csv "1.0.0"]
                  [ring/ring-core "1.6.2"]
                  [ring/ring-jetty-adapter "1.6.2"]
-                 [simple/check "2.0.0"]
                  [house.jux/biz.user "2022.10.03"]
                  [house.jux/http.api "2022.08.03-SNAPSHOT"]
                  [house.jux/http.exceptions "2022.08.03-SNAPSHOT"]

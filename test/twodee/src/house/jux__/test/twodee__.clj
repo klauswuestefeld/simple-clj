@@ -1,7 +1,8 @@
 (ns house.jux--.test.twodee--
   (:require [clojure.data.csv :as csv]
             [clojure.java.io :as java.io]
-            [clojure.string :as string]))
+            [clojure.string :as string]
+            [house.jux--.biz.user-- :refer [*user*]]))
 
 (def previous-query-results (atom nil)) ;; TODO: remove this atom
 (def all-spreadsheets-folder (java.io/file "test/twodee"))
@@ -57,13 +58,6 @@
   (when-not condition
     (let [error-map (assoc coords :spreadsheet *test-spreadsheet*)]
       (throw (ex-info otherwise-msg error-map)))))
-
-(defn- check-cell-fn! [condition-fn otherwise-msg coords]
-  (try
-    (check-cell! (condition-fn) otherwise-msg coords)
-    (catch Exception e
-      (check-cell! false (exception->str e) coords))))
-
 
 (defn- step->map [starting-line line [user function params command-result & query-results]]
   (let [parsed-query-results (parse-query-results query-results)]
@@ -125,9 +119,13 @@
   (let [coords {:column column
                 :line   line}]
     (check-cell! (not (string/blank? expected-result)) "Expected result cannot be blank" coords)
-    (check-cell-fn! #(= (eval (read-string expected-result)) actual-result)
-                    (str "Actual result was:\n" (if (some? actual-result) actual-result "nil"))
-                    coords)))
+    (try
+      (eval (read-string expected-result))
+      (catch Exception e
+        (check-cell! false (str "Error evaluating expected result:" (exception->str e)) coords)))
+    (check-cell! (= (eval (read-string expected-result)) actual-result)
+                 (str "Actual result was:\n" (if (some? actual-result) actual-result "nil"))
+                 coords)))
 
 (defn- ->letter [idx]
   (->> idx (nth "ABCDEFGHIJKLMNOPQRSTUVWXYZ") str))
@@ -142,34 +140,32 @@
 (defn- query-column-idx->column [idx]
   (->column (+ 4 idx)))
 
-(defn- quiet-eval [& forms]
+(defn- quiet-eval [forms]
   (try
-    (eval (apply list forms))
+    (eval forms)
     (catch Exception e
       (throw (RuntimeException. (str forms " - " (exception->str e)))))))
 
-(defn- execute-segment [value segment]
-  (quiet-eval (read-string segment) value))
+(defn list-insert [lst elem index]
+  (let [[l r] (split-at index lst)]
+    (concat l [elem] r)))
 
-(defn- resolve-fn [function-str column]
+(defn- execute-query-segment [value segment]
+  (-> (str "(" segment ")")
+      read-string
+      (list-insert value 1)
+      quiet-eval))
+
+(defn- query-result [state user segments]
   (try
-    (eval (symbol function-str))
-    (catch Exception _e
-      (check-cell! false (str "Unable to resolve symbol '" function-str "'") {:line 3, :column column}))))
-
-(defn- query-result [column state user [segment0 & segments]]
-  ()
-
-  (let [function (resolve-fn segment0 column)]
-    (try
-      (let [result0 (quiet-eval function state (symbol user))]
-        (reduce execute-segment result0 (remove string/blank? segments)))
+    (binding [*user* (eval (read-string user))]
+      (reduce execute-query-segment state (remove string/blank? segments)))
       (catch Exception e
-        (str (exception->str e))))))
+        (str (exception->str e)))))
 
 (defn- execute-query [state query-results-line query-column-number [user & segments] expected-result]
   (let [column (query-column-idx->column query-column-number)
-        actual-result (query-result column state user segments)]
+        actual-result (query-result state user segments)]
     (compare-results {:column column
                       :line   query-results-line}
                      expected-result
@@ -201,10 +197,11 @@
 (defn- execute-command [state {:keys [function user params result result-coords]}]
   (let [function (resolve-command-fn function (:line result-coords))
         expression (if (string/blank? params)
-                     (list function state (read-string user))
-                     (list function state (read-string user) (read-string params)))
+                     (list function state)
+                     (list function state (read-string params)))
         new-state (try
-                    (eval expression)
+                    (binding [*user* (eval (read-string user))]
+                      (eval expression))
                     (catch Exception e
                       (assoc state :result e)))]
     (check-command-result! result-coords result new-state)

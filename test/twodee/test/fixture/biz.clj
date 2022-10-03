@@ -1,27 +1,24 @@
 (ns fixture.biz
-  (:require [house.jux--.biz.user-- :refer [user]]
-            [simple.check2 :refer [check]]))
+  (:require [house.jux--.biz.user-- :refer [user]]))
 
-(defn create-new-profile [state _user profile]
-  (check (= _user (user)) "user arg and implicit user must be the same, for now")
+(defn create-new-profile [state profile]
   (let [state (->> (assoc profile :created-by (user))
                    (assoc state   :profile))]
     (assoc state :result "Profile Created")))
 
-(defn created-profile [state _user]
+(defn created-profile [state]
   (:profile state))
 
-(defn update-profile [state _user profile]
+(defn update-profile [state profile]
   (let [state (-> state
                   (update :profile merge profile)
                   (assoc-in [:profile :last-updated-by] (user)))]
     (assoc state :result "Profile Updated")))
 
-(defn registered-profiles [state _user]
+(defn registered-profiles [state]
   (if (:profile state) 1 0))
 
-(defn search-by-name [state _user name-arg]
-  (check (= _user (user)) "user arg and implicit user must be the same, for now")
+(defn search-by-name [state name-arg]
   (if (-> state :profile :name (= name-arg))
     (:profile state)
     nil))

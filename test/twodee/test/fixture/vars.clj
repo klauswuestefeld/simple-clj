@@ -1,3 +1,3 @@
 (ns fixture.vars)
 
-(def tester :tester)
+(def tester :ann)
