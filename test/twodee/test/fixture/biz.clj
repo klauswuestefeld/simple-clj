@@ -10,6 +10,8 @@
   (:profile state))
 
 (defn update-profile [state profile]
+  (when (-> profile :name (= "BOOM"))
+    (throw (RuntimeException. "Invalid name")))
   (let [state (-> state
                   (update :profile merge profile)
                   (assoc-in [:profile :last-updated-by] (user)))]

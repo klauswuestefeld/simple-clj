@@ -115,17 +115,24 @@
      :queries         queries
      :steps           steps}))
 
-(defn- compare-results [{:keys [column line]} expected-result actual-result]
-  (let [coords {:column column
-                :line   line}]
-    (check-cell! (not (string/blank? expected-result)) "Expected result cannot be blank" coords)
-    (try
-      (eval (read-string expected-result))
-      (catch Exception e
-        (check-cell! false (str "Error evaluating expected result:" (exception->str e)) coords)))
-    (check-cell! (= (eval (read-string expected-result)) actual-result)
-                 (str "Actual result was:\n" (if (some? actual-result) actual-result "nil"))
-                 coords)))
+(defn- check-exception! [actual expected coords]
+  (check-cell! (or (= expected "X")
+                   (-> actual .getMessage (= expected)))
+               (-> actual ex-data :form print-str (str " - " (exception->str actual)))
+               coords))
+
+(defn- check-results! [actual expected coords]
+  (check-cell! (not (string/blank? expected)) "Expected result cannot be blank" coords)
+  (if (instance? Exception actual)
+    (check-exception! actual expected coords)
+    (when-not (= expected "*")
+      (let [expected (try
+                       (eval (read-string expected))
+                       (catch Exception e
+                         (check-cell! false (str "Error evaluating expected result:" (exception->str e)) coords)))]
+        (check-cell! (= actual expected)
+                     (str "Actual result was:\n" (if (some? actual) actual "nil"))
+                     coords)))))
 
 (defn- ->letter [idx]
   (->> idx (nth "ABCDEFGHIJKLMNOPQRSTUVWXYZ") str))
@@ -140,11 +147,11 @@
 (defn- query-column-idx->column [idx]
   (->column (+ 4 idx)))
 
-(defn- quiet-eval [forms]
+(defn- eval-info [form]
   (try
-    (eval forms)
+    (eval form)
     (catch Exception e
-      (throw (RuntimeException. (str forms " - " (exception->str e)))))))
+      (throw (ex-info (exception->str e) {:form form})))))
 
 (defn list-insert [lst elem index]
   (let [[l r] (split-at index lst)]
@@ -154,22 +161,19 @@
   (-> (str "(" segment ")")
       read-string
       (list-insert value 1)
-      quiet-eval))
+      eval-info))
 
-(defn- query-result [state user segments]
+(defn- safe-query-result [state user segments]
   (try
     (binding [*user* (eval (read-string user))]
       (reduce execute-query-segment state (remove string/blank? segments)))
       (catch Exception e
-        (str (exception->str e)))))
+        e)))
 
 (defn- execute-query [state query-results-line query-column-number [user & segments] expected-result]
   (let [column (query-column-idx->column query-column-number)
-        actual-result (query-result state user segments)]
-    (compare-results {:column column
-                      :line   query-results-line}
-                     expected-result
-                     actual-result)))
+        actual-result (safe-query-result state user segments)]
+    (check-results! actual-result expected-result {:column column, :line query-results-line})))
 
 (defn- check-queries! [state query-results-line queries results]
   (doseq [[idx [query result]] (->> results
@@ -181,12 +185,10 @@
   (check-cell! (not (string/blank? expected)) "Command result cannot be blank" coords)
   (check-cell! (some? new-state) "Command returned nil. Must return a state map." coords)
   (check-cell! (map? new-state) (str "Command returned a " (.getClass new-state) ". Must return a state map.") coords)
+  (when-not (= expected "*")
+    (check-cell! (contains? new-state :result) (str "Command returned the state without a :result key.") coords))
   (let [actual (:result new-state)]
-    (when (and (instance? Exception actual) (not= expected "X"))
-      (compare-results coords expected (exception->str actual)))
-    (when-not (= expected "*")
-      (check-cell! (contains? new-state :result) (str "Command returned the state without a :result key.") coords)
-      (compare-results coords expected actual))))
+    (check-results! actual expected coords)))
 
 (defn- resolve-command-fn [function-str line]
   (try
@@ -200,12 +202,12 @@
                      (list function state)
                      (list function state (read-string params)))
         new-state (try
-                    (binding [*user* (eval (read-string user))]
-                      (eval expression))
+                    (binding [*user* (eval-info (read-string user))]
+                      (eval-info expression))
                     (catch Exception e
                       (assoc state :result e)))]
     (check-command-result! result-coords result new-state)
-    new-state))
+    (dissoc new-state :result)))
 
 (defn- line [command]
   (-> command :result-coords :line))
