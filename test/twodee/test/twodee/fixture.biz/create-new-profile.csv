@@ -5,4 +5,4 @@ A user can create a new profile,,,,,,,,,
 ,,,,nil,nil,nil,nil,nil,nil
 tester,create-new-profile,"{:name ""Bob"" :phone 444 :age 40}",*,"""Bob""",444,40,tester,,
 tester,update-profile,{:phone 555},*,,555,,,tester,tester
-tester,update-profile,"{:name ""BOOM""}",Invalid name,,555,,,tester,tester
+tester,update-profile,"{:name ""BOOM""}",Invalid name,,,,,,
