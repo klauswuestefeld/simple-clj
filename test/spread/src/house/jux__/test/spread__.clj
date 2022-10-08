@@ -252,14 +252,15 @@
          (filter #(= (.getName %) target-name))
          first)))
 
-(defn- folder-test-files [files]
-  (->> files
-       (remove #(.isDirectory %))
-       (remove #(= "require.csv" (.getName %)))
-       (remove #(string/ends-with? % ".layout.edn"))))
+(def require-filename "require.csv")
+
+(defn test-file? [file]
+  (let [name (.getName file)]
+    (and (string/ends-with? name ".csv")
+         (not= name require-filename))))
 
 (defn- requirements [folder]
-  (let [requires-file (java.io/file folder "require.csv")]
+  (let [requires-file (java.io/file folder require-filename)]
     (if (.exists requires-file)
       (parse-requires requires-file)
       nil)))
@@ -269,7 +270,8 @@
         context      (cond-> parent-context
                        requirements (update :all-requirements (fnil conj []) requirements))
         children     (sorted-files folder)]
-    (->> (folder-test-files children)
+    (->> children
+         (filter test-file?)
          (run! (fn [file]
                  (let [new-context (run-test-in-file! context subject-namespace file)]
                    (when-let [subfolder (corresponding-subfolder children file)]

@@ -5,7 +5,6 @@
             [house.jux--.http.pprint-- :refer [wrap-pprint]]
             [clojure.java.io :as java.io]
             [clojure.stacktrace :as stacktrace]
-            [clojure.string :as string]
             [ring.middleware.keyword-params :refer [wrap-keyword-params]]
             [ring.middleware.params :refer [wrap-params]]
             [ring.util.response :refer [resource-response]]
@@ -45,13 +44,18 @@
     (cond-> {:data data}
      dimensions (assoc :dimensions dimensions))))
 
-(defn- get-test-files [file]
-  (remove (fn [file]
-            (string/ends-with? (.getName file) layout/file-suffix)) (.listFiles file)))
+(defn- relevant? [file]
+  (or (.isDirectory file)
+      (spread/test-file? file)
+      (-> file .getName (= spread/require-filename))))
 
 (defn- file-tree [file]
   (cond-> {:name (.getName file)}
-    (.isDirectory file) (assoc :children (map file-tree (get-test-files file)))))
+    (.isDirectory file) (assoc :children
+                               (->> file
+                                    .listFiles
+                                    (filter relevant?)
+                                    (map file-tree)))))
 
 (defn- test-tree [_endpoint _user _]
   (file-tree (java.io/file spread/all-spreadsheets-folder)))
