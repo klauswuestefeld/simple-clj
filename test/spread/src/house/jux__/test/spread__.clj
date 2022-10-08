@@ -1,11 +1,11 @@
-(ns house.jux--.test.twodee--
+(ns house.jux--.test.spread--
   (:require [clojure.data.csv :as csv]
             [clojure.java.io :as java.io]
             [clojure.string :as string]
             [house.jux--.biz.user-- :refer [*user*]]))
 
 (def previous-query-results (atom nil)) ;; TODO: remove this atom
-(def all-spreadsheets-folder (java.io/file "test/twodee"))
+(def all-spreadsheets-folder (java.io/file "test/spread"))
 (def ^:dynamic *test-spreadsheet*)
 
 (defn parse-csv [sheet-path]
@@ -123,13 +123,15 @@
 
 (defn- check-results! [actual expected coords]
   (check-cell! (not (string/blank? expected)) "Expected result cannot be blank" coords)
-  (if (instance? Exception actual)
+  (if (instance? Throwable actual)
     (check-exception! actual expected coords)
     (when-not (= expected "*")
-      (let [expected (try
-                       (eval (read-string expected))
-                       (catch Exception e
-                         (check-cell! false (str "Error evaluating expected result:" (exception->str e)) coords)))]
+      (let [expected (if (= expected "X")
+                       "X"
+                       (try
+                        (eval (read-string expected))
+                        (catch Throwable e
+                          (check-cell! false (str "Error evaluating expected result:" (exception->str e)) coords))))]
         (check-cell! (= actual expected)
                      (str "Actual result was:\n" (if (some? actual) actual "nil"))
                      coords)))))
@@ -148,26 +150,29 @@
   (->column (+ 4 idx)))
 
 (defn- eval-info [form]
+  (println "================== Evaluating: " form)
   (try
     (eval form)
-    (catch Exception e
+    (catch Throwable e
       (throw (ex-info (exception->str e) {:form form})))))
 
 (defn list-insert [lst elem index]
   (let [[l r] (split-at index lst)]
     (concat l [elem] r)))
 
-(defn- execute-query-segment [value segment]
+(defn execute-query-segment [value segment]
+  (intern *ns* '_ value) ; Intern is a "def" that works at runtime (def creates the var at compile time). This indirection with this var is required because complex non-clojure objects such as #datascript/DB {...}, when added directy in the form, will give the error: "Can't embed object in code". Also it looks better in the print of the form than a huge state map.
   (-> (str "(" segment ")")
       read-string
-      (list-insert value 1)
+      (list-insert '_ 1) ; This undeline symbol refers to the var above.
       eval-info))
 
 (defn- safe-query-result [state user segments]
   (try
     (binding [*user* (eval (read-string user))]
       (reduce execute-query-segment state (remove string/blank? segments)))
-      (catch Exception e
+      (catch Throwable e
+        (.printStackTrace e)
         e)))
 
 (defn- execute-query [state query-results-line query-column-number [user & segments] expected-result]
@@ -198,13 +203,13 @@
 
 (defn- execute-command [state {:keys [function user params result result-coords]}]
   (let [function (resolve-command-fn function (:line result-coords))
-        expression (if (string/blank? params)
-                     (list function state)
-                     (list function state (read-string params)))
+        function (if (string/blank? params)
+                   #(function state)
+                   #(function state (read-string params)))
         new-state (try
                     (binding [*user* (eval-info (read-string user))]
-                      (eval-info expression))
-                    (catch Exception e
+                      (function))
+                    (catch Throwable e
                       (assoc state :result e)))]
     (check-command-result! result-coords result new-state)
     (dissoc new-state :result)))
@@ -224,14 +229,14 @@
   (eval `(ns ~namespace (:require [~required-namespace :refer :all]))))
 
 (defn- init-requires [subject-namespace all-requirements]
-  (let [namespace 'tmp.twodees]
+  (let [namespace 'tmp.spreads]
     (remove-ns namespace)
     (require-namespace-refer-all namespace (symbol subject-namespace))
     (doseq [requirements all-requirements]
       (eval-requires namespace requirements))))
 
 (defn- run-test-in-file! [{:as context :keys [all-requirements state]} subject-namespace file]
-  (binding [*ns* (find-ns 'house.jux--.test.twodee--)
+  (binding [*ns* (find-ns 'house.jux--.test.spread--)
             *test-spreadsheet* (.getName file)] ; TODO: find a cleaner way. This can be any ns just to set the root binding of *ns*
     (let [relative-path       (.getPath file)
           test-map            (-> relative-path parse-csv csv->test-map)]

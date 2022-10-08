@@ -1,4 +1,4 @@
-(ns house.jux--.test.twodee--.server
+(ns house.jux--.test.spread--.server
   (:require [ring.adapter.jetty :refer [run-jetty]]
             [house.jux--.http.api-- :as api]
             [house.jux--.http.exceptions-- :refer [wrap-exceptions]]
@@ -9,9 +9,9 @@
             [ring.middleware.keyword-params :refer [wrap-keyword-params]]
             [ring.middleware.params :refer [wrap-params]]
             [ring.util.response :refer [resource-response]]
-            [house.jux--.test.twodee--.csv :as csv]
-            [house.jux--.test.twodee--.layout :as layout]
-            [house.jux--.test.twodee-- :as twodee]))
+            [house.jux--.test.spread--.csv :as csv]
+            [house.jux--.test.spread--.layout :as layout]
+            [house.jux--.test.spread-- :as spread]))
 
 (def not-found (constantly {:status 404, :body "Not found"}))
 (def port 7357)
@@ -19,12 +19,12 @@
 (defn wrap-index-html [delegate]
   (fn [request]
     (if (-> request :uri (= "/"))
-      (resource-response "house/jux__/test/twodee__/index.html")
+      (resource-response "house/jux__/test/spread__/index.html")
       (delegate request))))
 
 (defn- run-tests [_endpoint _user _]
   (try
-    (twodee/run-all-tests!)
+    (spread/run-all-tests!)
     (catch RuntimeException e
       (throw (if (ex-data e)
                e
@@ -32,14 +32,14 @@
                         {:stacktrace (with-out-str (stacktrace/print-cause-trace e))}))))))
 
 (defn- save-and-run [endpoint user {:keys [filename spreadsheet-data spreadsheet-dimensions] :as params}]
-  (let [relative-path   (str twodee/all-spreadsheets-folder filename)]
+  (let [relative-path   (str spread/all-spreadsheets-folder filename)]
     (when filename
       (csv/write! relative-path spreadsheet-data))
     (layout/layout-save relative-path spreadsheet-dimensions)
     (run-tests endpoint user params)))
 
 (defn- csv-read [_endpoint _user {:keys [filename]}]
-  (let [relative-path   (str twodee/all-spreadsheets-folder filename)
+  (let [relative-path   (str spread/all-spreadsheets-folder filename)
         data            (csv/read! relative-path)
         dimensions      (layout/layout-get relative-path)]
     (cond-> {:data data}
@@ -54,7 +54,7 @@
     (.isDirectory file) (assoc :children (map file-tree (get-test-files file)))))
 
 (defn- test-tree [_endpoint _user _]
-  (file-tree (java.io/file twodee/all-spreadsheets-folder)))
+  (file-tree (java.io/file spread/all-spreadsheets-folder)))
 
 (defonce server (atom nil))
 (defn restart! []
@@ -72,7 +72,7 @@
               (wrap-params)
               (run-jetty {:port  port
                           :join? false})))
-  (println (str "Twodee restarted. Listening on http://localhost:" port)))
+  (println (str "Spread restarted. Listening on http://localhost:" port)))
 
 (comment
   (restart!))

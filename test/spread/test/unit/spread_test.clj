@@ -1,9 +1,9 @@
-(ns unit.twodee-test
+(ns unit.spread-test
   (:require [clojure.test :refer [deftest is]]
-            [house.jux--.test.twodee-- :as subject]))
+            [house.jux--.test.spread-- :as subject]))
 
 (def parsed-csv
-  (subject/parse-csv "test/twodee/fixture.biz/create-new-profile.csv"))
+  (subject/parse-csv "test/spread/fixture.biz/create-new-profile.csv"))
 ;; TODO: fix the following test
 (deftest building-test-map
   (is (= {:title "A user can create a new profile",

@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8" />
-  <title>Twodee</title>
+  <title>Spread</title>
 
   <script src="https://bossanova.uk/jspreadsheet/v4/jexcel.js"></script>
   <script src="https://jsuites.net/v4/jsuites.js"></script>
@@ -12,11 +12,11 @@
 
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Material+Icons" />
   <style>
-    #twodee {
+    #spread {
       margin: 12px;
     }
 
-    #twodee-spreadsheet {
+    #spread-spreadsheet {
       padding: 10px;
       overflow: auto;
       display: block;
@@ -43,7 +43,7 @@
     <div id="alert-container">
     </div>
   </div>
-  <div id="twodee-spreadsheet"></div>
+  <div id="spread-spreadsheet"></div>
 </body>
 <script>
   let jspreadsheetObj;
@@ -79,7 +79,7 @@
     if (spreadsheet?.dimensions?.rows) {
       jspreadsheetPayload.rows = spreadsheet.dimensions.rows;
     }
-    jspreadsheetObj = jspreadsheet(document.getElementById("twodee-spreadsheet"), jspreadsheetPayload);
+    jspreadsheetObj = jspreadsheet(document.getElementById("spread-spreadsheet"), jspreadsheetPayload);
   }
 
   function clearErrorHighlights() {
@@ -182,7 +182,7 @@
   function openDetails(element) {
     const details = element.parentElement;
     details.open = true;
-    if (details.id !== "twodee") {
+    if (details.id !== "spread") {
       openDetails(details);
     }
   }
@@ -223,7 +223,7 @@
   async function loadTestSpreadsheet(filePath) {
     const spreadsheet = await getSpreadsheet(filePath);
 
-    const spreadsheetDOMElement = document.querySelector("#twodee-spreadsheet");
+    const spreadsheetDOMElement = document.querySelector("#spread-spreadsheet");
     Array.from(spreadsheetDOMElement?.children)?.forEach(child => child.remove());
     displayTestStatusAlert("");
 
@@ -232,7 +232,7 @@
   }
 
   function getMenuItemFilePath(element, path) {
-    if (element.parentElement.id === "twodee") {
+    if (element.parentElement.id === "spread") {
       return path;
     }
 
