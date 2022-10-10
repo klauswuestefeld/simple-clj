@@ -121,6 +121,26 @@
                (-> actual ex-data :form print-str (str " - " (exception->str actual)))
                coords))
 
+(defn- deep-flatten [v]
+  (tree-seq coll? seq v))
+
+(defn- check-symbol! [sym]
+  (try
+    (eval sym)
+    (catch Exception _
+      (throw (IllegalStateException. (str "Unable to resolve symbol " sym))))))
+
+(defn- compile-string [s]
+  (let [result (read-string s)]
+    (->> result
+         deep-flatten
+         (filter symbol?)
+         (run! check-symbol!))
+    result))
+
+(defn- evaluate-string [s]
+  (-> s compile-string eval))
+
 (defn- check-results! [actual expected coords]
   (check-cell! (not (string/blank? expected)) "Expected result cannot be blank" coords)
   (if (instance? Throwable actual)
@@ -129,7 +149,7 @@
       (let [expected (if (= expected "X")
                        "X"
                        (try
-                        (eval (read-string expected))
+                         (evaluate-string expected)
                         (catch Throwable e
                           (check-cell! false (str "Error evaluating expected result:" (exception->str e)) coords))))]
         (check-cell! (= actual expected)
@@ -160,11 +180,16 @@
   (let [[l r] (split-at index lst)]
     (concat l [elem] r)))
 
+(defn- with-underline [form]
+  (if (some #{'_} form)
+    form
+    (list-insert form '_ 1)))
+
 (defn execute-query-segment [value segment]
   (intern *ns* '_ value) ; Intern is a "def" that works at runtime (def creates the var at compile time). This indirection with this var is required because complex non-clojure objects such as #datascript/DB {...}, when added directy in the form, will give the error: "Can't embed object in code". Also it looks better in the print of the form than a huge state map.
   (-> (str "(" segment ")")
       read-string
-      (list-insert '_ 1) ; This undeline symbol refers to the var above.
+      with-underline  ; The undeline symbol in the form refers to the var above.
       eval-info))
 
 (defn- safe-query-result [state user segments]
