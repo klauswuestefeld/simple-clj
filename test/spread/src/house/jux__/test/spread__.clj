@@ -171,7 +171,7 @@
                         (catch Throwable e
                           (check-cell! false (str "Error evaluating expected result:" (exception->str e)) coords))))]
         (check-cell! (= actual expected)
-                     (str "Actual result was:\n" (if (some? actual) actual "nil"))
+                     (str "Actual result was:\n" (if (some? actual) (pr-str actual) "nil"))
                      coords)))))
 
 (defn list-insert [lst elem index]
