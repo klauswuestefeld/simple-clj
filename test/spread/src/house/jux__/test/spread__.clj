@@ -1,7 +1,9 @@
 (ns house.jux--.test.spread--
   (:require [clojure.data.csv :as csv]
             [clojure.java.io :as java.io]
+            clojure.stacktrace
             [clojure.string :as string]
+            clojure.walk
             [house.jux--.biz.user-- :refer [*user*]]))
 
 (def previous-query-results (atom nil)) ;; TODO: remove this atom
@@ -127,8 +129,8 @@
 
 (defn- exception->str [e]
   (let [message (or (.getMessage e) (str (.getClass e)))]
-    (if-let [data (ex-data e)]
-      (prn-str message data)
+    (if-let [form (-> e ex-data :form)]
+      (str message " - Form: " (prn-str form))
       message)))
 
 (defn- check-exception! [actual expected coords]
@@ -140,24 +142,19 @@
 (defn- deep-flatten [v]
   (tree-seq coll? seq v))
 
-(defn- check-symbol! [v]
-  (when (symbol? v)
-    (try
-      (eval v)
-      (catch Exception _
-        (throw (IllegalStateException. (str "Unable to resolve symbol " v)))))))
-
 (defn- compile-string [s]
-  (let [result (read-string s)]
-    (->> result deep-flatten (run! check-symbol!))
-    result))
+  (-> s read-string clojure.walk/macroexpand-all))
 
 (defn- eval-info [form]
   (println "================== Evaluating: " form)
   (try
     (eval form)
     (catch Throwable e
-      (throw (ex-info (exception->str e) {:form form})))))
+      (-> e
+          clojure.stacktrace/root-cause
+          exception->str
+          (ex-info {:form form})
+          throw))))
 
 (defn- eval-string [s]
   (-> s compile-string eval-info))
@@ -171,8 +168,8 @@
                        "X"
                        (try
                          (eval-string expected)
-                        (catch Throwable e
-                          (check-cell! false (str "Error evaluating expected result:" (exception->str e)) coords))))]
+                         (catch Throwable e
+                           (check-cell! false (str "Error evaluating expected result:" (exception->str e)) coords))))]
         (check-cell! (= actual expected)
                      (str "Actual result was:\n" (if (some? actual) (prn-str actual) "nil"))
                      coords)))))
@@ -197,9 +194,9 @@
   (try
     (binding [*user* (eval-string user)]
       (reduce execute-query-segment state (remove string/blank? segments)))
-      (catch Throwable e
-        (.printStackTrace e)
-        e)))
+    (catch Throwable e
+      (.printStackTrace e)
+      e)))
 
 (defn- execute-query [state query-results-line query-column-number [user & segments] expected-result]
   (let [column (query-column-idx->column query-column-number)
@@ -223,18 +220,19 @@
 
 (defn- resolve-command-fn [function-str line]
   (try
-    (eval (read-string function-str))
-    (catch Exception _e
-      (check-cell! false (str "Unable to resolve function '" function-str "'") {:line line, :column "B"}))))
+    (eval-string function-str)
+    (catch Exception e
+      (check-cell! false (str "Unable to resolve command '" function-str "' " (exception->str e))
+                   {:line line, :column "B"}))))
 
 (defn- execute-command [state {:keys [function user params result result-coords]}]
-  (let [function (resolve-command-fn function (:line result-coords))
-        function (if (string/blank? params)
-                   #(function state)
-                   #(function state (read-string params)))
+  (let [command (resolve-command-fn function (:line result-coords))
+        command (if (string/blank? params)
+                   #(command state)
+                   #(command state (eval-string params)))
         new-state (try
-                    (binding [*user* (eval-info (read-string user))]
-                      (function))
+                    (binding [*user* (eval-string user)]
+                      (command))
                     (catch Throwable e
                       (assoc state :result e)))]
     (check-command-result! result-coords result new-state)
