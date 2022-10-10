@@ -266,7 +266,7 @@
     } else {
       const p = document.createElement("p");
       p.id = el.name;
-      p.textContent = el.name;
+      p.textContent = el.name.replace(".csv", "");
       p.style.cursor = "pointer";
 
       menu.appendChild(p);
