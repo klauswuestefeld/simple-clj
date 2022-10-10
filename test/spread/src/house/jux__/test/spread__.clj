@@ -59,6 +59,19 @@
     (let [error-map (assoc coords :spreadsheet *test-spreadsheet*)]
       (throw (ex-info otherwise-msg error-map)))))
 
+(defn- ->letter [idx]
+  (->> idx (nth "ABCDEFGHIJKLMNOPQRSTUVWXYZ") str))
+
+(defn- ->column [idx]
+  (let [mostSignificantLetter  (if (-> idx (/ 26) int zero?)
+                                 ""
+                                 (-> idx (/ 26) int dec ->letter))
+        leastSignificantLetter (->letter (mod idx 26))]
+    (str mostSignificantLetter leastSignificantLetter)))
+
+(defn- query-column-idx->column [idx]
+  (->column (+ 4 idx)))
+
 (defn- step->map [starting-line line [user function params command-result & query-results]]
   (let [parsed-query-results (parse-query-results query-results)]
     {:command {:user          user
@@ -124,22 +137,27 @@
 (defn- deep-flatten [v]
   (tree-seq coll? seq v))
 
-(defn- check-symbol! [sym]
-  (try
-    (eval sym)
-    (catch Exception _
-      (throw (IllegalStateException. (str "Unable to resolve symbol " sym))))))
+(defn- check-symbol! [v]
+  (when (symbol? v)
+    (try
+      (eval v)
+      (catch Exception _
+        (throw (IllegalStateException. (str "Unable to resolve symbol " v)))))))
 
 (defn- compile-string [s]
   (let [result (read-string s)]
-    (->> result
-         deep-flatten
-         (filter symbol?)
-         (run! check-symbol!))
+    (->> result deep-flatten (run! check-symbol!))
     result))
 
-(defn- evaluate-string [s]
-  (-> s compile-string eval))
+(defn- eval-info [form]
+  (println "================== Evaluating: " form)
+  (try
+    (eval form)
+    (catch Throwable e
+      (throw (ex-info (exception->str e) {:form form})))))
+
+(defn- eval-string [s]
+  (-> s compile-string eval-info))
 
 (defn- check-results! [actual expected coords]
   (check-cell! (not (string/blank? expected)) "Expected result cannot be blank" coords)
@@ -149,46 +167,26 @@
       (let [expected (if (= expected "X")
                        "X"
                        (try
-                         (evaluate-string expected)
+                         (eval-string expected)
                         (catch Throwable e
                           (check-cell! false (str "Error evaluating expected result:" (exception->str e)) coords))))]
         (check-cell! (= actual expected)
                      (str "Actual result was:\n" (if (some? actual) actual "nil"))
                      coords)))))
 
-(defn- ->letter [idx]
-  (->> idx (nth "ABCDEFGHIJKLMNOPQRSTUVWXYZ") str))
-
-(defn- ->column [idx]
-  (let [mostSignificantLetter  (if (-> idx (/ 26) int zero?)
-                                 ""
-                                 (-> idx (/ 26) int dec ->letter))
-        leastSignificantLetter (->letter (mod idx 26))]
-    (str mostSignificantLetter leastSignificantLetter)))
-
-(defn- query-column-idx->column [idx]
-  (->column (+ 4 idx)))
-
-(defn- eval-info [form]
-  (println "================== Evaluating: " form)
-  (try
-    (eval form)
-    (catch Throwable e
-      (throw (ex-info (exception->str e) {:form form})))))
-
 (defn list-insert [lst elem index]
   (let [[l r] (split-at index lst)]
     (concat l [elem] r)))
 
 (defn- with-underline [form]
-  (if (some #{'_} form)
+  (if (->> form deep-flatten (some #{'_}))
     form
     (list-insert form '_ 1)))
 
 (defn execute-query-segment [value segment]
   (intern *ns* '_ value) ; Intern is a "def" that works at runtime (def creates the var at compile time). This indirection with this var is required because complex non-clojure objects such as #datascript/DB {...}, when added directy in the form, will give the error: "Can't embed object in code". Also it looks better in the print of the form than a huge state map.
   (-> (str "(" segment ")")
-      read-string
+      compile-string
       with-underline  ; The undeline symbol in the form refers to the var above.
       eval-info))
 
