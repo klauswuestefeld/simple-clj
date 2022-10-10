@@ -51,9 +51,6 @@
     (reset! previous-query-results result)
     result))
 
-(defn- exception->str [e]
-  (or (.getMessage e) (str (.getClass e))))
-
 (defn- check-cell! [condition otherwise-msg coords]
   (when-not condition
     (let [error-map (assoc coords :spreadsheet *test-spreadsheet*)]
@@ -128,10 +125,16 @@
      :queries         queries
      :steps           steps}))
 
+(defn- exception->str [e]
+  (let [message (or (.getMessage e) (str (.getClass e)))]
+    (if-let [data (ex-data e)]
+      (prn-str message data)
+      message)))
+
 (defn- check-exception! [actual expected coords]
   (check-cell! (or (= expected "X")
                    (-> actual .getMessage (= expected)))
-               (-> actual ex-data :form print-str (str " - " (exception->str actual)))
+               (exception->str actual)
                coords))
 
 (defn- deep-flatten [v]
@@ -171,7 +174,7 @@
                         (catch Throwable e
                           (check-cell! false (str "Error evaluating expected result:" (exception->str e)) coords))))]
         (check-cell! (= actual expected)
-                     (str "Actual result was:\n" (if (some? actual) (pr-str actual) "nil"))
+                     (str "Actual result was:\n" (if (some? actual) (prn-str actual) "nil"))
                      coords)))))
 
 (defn list-insert [lst elem index]
@@ -192,7 +195,7 @@
 
 (defn- safe-query-result [state user segments]
   (try
-    (binding [*user* (eval (read-string user))]
+    (binding [*user* (eval-string user)]
       (reduce execute-query-segment state (remove string/blank? segments)))
       (catch Throwable e
         (.printStackTrace e)
