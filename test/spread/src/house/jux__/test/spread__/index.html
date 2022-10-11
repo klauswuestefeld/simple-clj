@@ -112,18 +112,22 @@
     displayTestStatusAlert("Running tests...");
   }
 
-  function indicateTestsPassed() {
+  function displayTestsPassed() {
     displayTestStatusAlert("All tests passed (Just now)", "green");
     setTimeout(() => {
       displayTestStatusAlert("All tests passed", "green")
     }, 3000);
   }
 
+  function displayTestError(msg) {
+    displayTestStatusAlert(msg, "red");
+  }
+
+
   async function handleTestResponse(response) {
     if (response.ok) {
-      indicateTestsPassed();
+      displayTestsPassed();
     } else {
-      displayTestStatusAlert("Failure", "red");
       const body = await response.json();
       if (body["ex-data"] && body["ex-data"].column) {
         const cell = body["ex-data"].column + body["ex-data"].line;
@@ -134,11 +138,11 @@
         const cellDOMElement = jspreadsheetObj.getCell(cell);
         cellDOMElement.style.backgroundColor = "lightpink";
 
-        alert(body.message + "\nCell " + cell);
+        displayTestError(body.message);
       } else if (body["ex-data"] && body["ex-data"].stacktrace) {
-        alert("Exception\n\n" + body["ex-data"].stacktrace)
+        displayTestError("Exception\n\n" + body["ex-data"].stacktrace)
       } else {
-        alert(body.message);
+        displayTestError(body.message);
       }
     }
   }

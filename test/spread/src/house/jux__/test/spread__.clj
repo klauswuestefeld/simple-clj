@@ -4,7 +4,8 @@
             clojure.stacktrace
             [clojure.string :as string]
             clojure.walk
-            [house.jux--.biz.user-- :refer [*user*]]))
+            [house.jux--.biz.user-- :refer [*user*]]
+            [simple.check2 :refer [check]]))
 
 (def previous-query-results (atom nil)) ;; TODO: remove this atom
 (def all-spreadsheets-folder (java.io/file "test/spread"))
@@ -143,10 +144,11 @@
   (tree-seq coll? seq v))
 
 (defn- compile-string [s]
+  (check (not (string/blank? s)) "String cannot be blank")
   (-> s read-string clojure.walk/macroexpand-all))
 
 (defn- eval-info [form]
-  (println "================== Evaluating: " form)
+  ; (println "================== Evaluating: " form)
   (try
     (eval form)
     (catch Throwable e
@@ -190,9 +192,15 @@
       with-underline  ; The undeline symbol in the form refers to the var above.
       eval-info))
 
+(defn- eval-user [user-string]
+  (try
+    (eval-string user-string)
+    (catch Throwable t
+      (throw (RuntimeException. (str "Error reading user: " (exception->str t)))))))
+
 (defn- safe-query-result [state user segments]
   (try
-    (binding [*user* (eval-string user)]
+    (binding [*user* (eval-user user)]
       (reduce execute-query-segment state (remove string/blank? segments)))
     (catch Throwable e
       (.printStackTrace e)
@@ -231,7 +239,7 @@
                    #(command state)
                    #(command state (eval-string params)))
         new-state (try
-                    (binding [*user* (eval-string user)]
+                    (binding [*user* (eval-user user)]
                       (command))
                     (catch Throwable e
                       (assoc state :result e)))]
