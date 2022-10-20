@@ -74,12 +74,8 @@
       rowResize: true,
       wordWrap: true,
     }
-    if (spreadsheet?.dimensions?.columns) {
-      jspreadsheetPayload.columns = spreadsheet.dimensions.columns;
-    }
-    if (spreadsheet?.dimensions?.rows) {
-      jspreadsheetPayload.rows = spreadsheet.dimensions.rows;
-    }
+    if (spreadsheet?.dimensions?.columns) jspreadsheetPayload.columns = spreadsheet.dimensions.columns;
+    if (spreadsheet?.dimensions?.rows) jspreadsheetPayload.rows = spreadsheet.dimensions.rows;
     jspreadsheetObj = jspreadsheet(document.getElementById("spread-spreadsheet"), jspreadsheetPayload);
   }
 
@@ -101,9 +97,7 @@
     alert.id = "test-status-alert";
     alert.textContent = message;
 
-    if (textColor) {
-      alert.style.color = textColor;
-    }
+    if (textColor) alert.style.color = textColor;
 
     const container = document.querySelector("#alert-container");
     container.appendChild(alert);
@@ -193,10 +187,7 @@
 
   function getSelectedTest() {
     const selectedTestId = localStorage.getItem("selected-test");
-    if (!selectedTestId) {
-      return;
-    }
-
+    if (!selectedTestId) return;
     const selectedTest = document.getElementById(selectedTestId);
     openDetails(selectedTest);
     handleTestSelection(selectedTest);
@@ -219,9 +210,7 @@
       body: JSON.stringify({ filename: name }),
     });
 
-    if (response.ok) {
-      return await response.json();
-    }
+    if (response.ok) return await response.json();
   }
 
   async function loadTestSpreadsheet(filePath) {
