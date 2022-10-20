@@ -31,7 +31,7 @@
       margin-bottom: 0.4rem;
     }
 
-    p.selected-test {
+    .selected-test {
       background-color: blue;
       color: white;
     }
@@ -181,10 +181,9 @@
 
   function openDetails(element) {
     const details = element.parentElement;
+    if (details.tagName !== "DETAILS") return;
     details.open = true;
-    if (details.id !== "spread") {
-      openDetails(details);
-    }
+    openDetails(details);
   }
 
   function getSelectedTest() {
@@ -195,7 +194,7 @@
 
     const selectedTest = document.getElementById(selectedTestId);
     openDetails(selectedTest);
-    selectedTest.click();
+    handleTestSelection(selectedTest);
   }
 
   function setSelectedTest(id) {
@@ -203,7 +202,7 @@
   }
 
   function highlightSelectedTest(element) {
-    const selectableElements = document.querySelectorAll("details p");
+    const selectableElements = document.querySelectorAll("#menu-div details *");
     selectableElements.forEach(selectableElement => selectableElement.classList.remove("selected-test"));
 
     element.classList.add("selected-test");
@@ -231,49 +230,46 @@
     currentFilePath = filePath;
   }
 
-  function getMenuItemFilePath(element, path) {
-    if (element.parentElement.id === "spread") {
-      return path;
-    }
-
-    path = "/" + element.parentElement.id + path;
-
-    return getMenuItemFilePath(element.parentElement, path);
-  }
-
-  async function handleTestSelection(element) {
-    const filePath = element.getAttribute('file-path');
+  async function handleTestSelection(htmlElement) {
+    const filePath = htmlElement.getAttribute("file-path");
     await loadTestSpreadsheet(filePath);
-    setSelectedTest(element.id);
-    highlightSelectedTest(element);
+    setSelectedTest(htmlElement.id);
+    highlightSelectedTest(htmlElement);
   }
 
-  function appendElementToMenu(menu, el) {
-    const isDirectory = el.children;
-    if (isDirectory) {
+  function appendElementToMenu(menu, el, topLevel) {
+    const { name, children, path } = el;
+    if (children) {
       const details = document.createElement("details");
-      details.id = el.name;
 
       const summary = document.createElement("summary");
-      summary.textContent = el.name;
+      summary.textContent = name;
       summary.style.cursor = "pointer";
+      summary.id = name + ".csv";
 
       details.appendChild(summary);
-
       menu.appendChild(details);
 
-      el.children.forEach(el => appendElementToMenu(details, el));
+      if (!topLevel) {
+        summary.setAttribute("file-path", "/" + path + ".csv");
+
+        summary.addEventListener("click", (ev) => {
+          if (ev.clientX > 23) {
+            ev.preventDefault();
+            handleTestSelection(summary);
+          }
+        });
+      }
+      children.forEach(el => appendElementToMenu(details, el, false));
     } else {
       const p = document.createElement("p");
-      p.id = el.name;
-      p.textContent = el.name.replace(".csv", "");
+      p.id = name;
+      p.textContent = name.replace(".csv", "");
       p.style.cursor = "pointer";
 
       menu.appendChild(p);
 
-      const filePath = getMenuItemFilePath(p, "/" + el.name);
-      p.setAttribute("file-path", filePath);
-
+      p.setAttribute("file-path", "/" + path);
       p.addEventListener("click", (_ev) => handleTestSelection(p));
     }
   }
@@ -288,7 +284,9 @@
     if (tree) {
       const menu = document.querySelector("#menu-div");
       menu.style.display = "block";
-      appendElementToMenu(menu, tree);
+      tree.forEach(namespace => {
+        appendElementToMenu(menu, namespace, true);
+      });
       getSelectedTest();
     }
   }

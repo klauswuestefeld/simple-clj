@@ -5,6 +5,7 @@
             [house.jux--.http.pprint-- :refer [wrap-pprint]]
             [clojure.java.io :as java.io]
             [clojure.stacktrace :as stacktrace]
+            [clojure.string :as string]
             [ring.middleware.keyword-params :refer [wrap-keyword-params]]
             [ring.middleware.params :refer [wrap-params]]
             [ring.util.response :refer [resource-response]]
@@ -42,23 +43,43 @@
         data            (csv/read! relative-path)
         dimensions      (layout/layout-get relative-path)]
     (cond-> {:data data}
-     dimensions (assoc :dimensions dimensions))))
+      dimensions (assoc :dimensions dimensions))))
 
 (defn- relevant? [file]
   (or (.isDirectory file)
       (spread/test-file? file)
       (-> file .getName (= spread/require-filename))))
 
+(def all-test-dirs
+  (->> spread/all-spreadsheets-folder
+       java.io/file
+       file-seq
+       (filter #(.isDirectory %))
+       (map #(.getName %))
+       set))
+
+(defn- dir-and-file? [{:keys [name]}]
+  (and (.endsWith name ".csv")
+       (contains? all-test-dirs (string/replace name
+                                                (re-pattern ".csv")
+                                                ""))))
+
 (defn- file-tree [file]
-  (cond-> {:name (.getName file)}
+  (cond-> {:name (.getName file)
+           :path (string/replace (.getPath file) (re-pattern "test/spread/") "")}
     (.isDirectory file) (assoc :children
                                (->> file
                                     .listFiles
                                     (filter relevant?)
-                                    (map file-tree)))))
+                                    (map file-tree)
+                                    (remove dir-and-file?)))))
 
 (defn- test-tree [_endpoint _user _]
-  (file-tree (java.io/file spread/all-spreadsheets-folder)))
+  (let [namespaces (->> spread/all-spreadsheets-folder
+                        java.io/file
+                        .listFiles
+                        (filter #(.isDirectory %)))]
+    (map file-tree namespaces)))
 
 (defonce server (atom nil))
 (defn restart! []
