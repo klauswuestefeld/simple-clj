@@ -128,6 +128,41 @@
      :queries         queries
      :steps           steps}))
 
+(defn- queries->cells [cols rows]
+  (let [initial-col-idx 4
+        initial-row     2]
+    (->> (range initial-col-idx (+ cols initial-col-idx))
+         (mapcat (fn [col-num]
+                   (let [col-letter (->column col-num)]
+                     (map (fn [row-num]
+                            (str col-letter row-num))
+                          (range initial-row (+ rows initial-row)))))))))
+
+(defn- commands->cells [commands initial-command-row]
+  (let [commands-cols 4
+        commands-rows (- (count commands) 1) ;; initial step is not a user command
+        ]
+    (->> (range commands-cols)
+         (mapcat (fn [col-num]
+                   (let [col-letter (->column col-num)]
+                     (map (fn [row-num]
+                            (str col-letter row-num)) 
+                          (range initial-command-row (+ commands-rows initial-command-row)))))))))
+
+(defn- initial-results->cells [row cols]
+  (let [inital-col-idx 4]
+    (->> (range inital-col-idx (+ cols inital-col-idx))
+         (map (fn [col-num]
+                (str (->column col-num) row))))))
+
+(defn cells-info [parsed-csv]
+  (let [{:keys [queries steps]} (csv->test-map parsed-csv)
+        queries-rows (apply max (map count queries))
+        queries-cols (count queries)]
+    {:queries         (queries->cells queries-cols queries-rows)
+     :initial-results (initial-results->cells (+ queries-rows 2) queries-cols)
+     :commands        (commands->cells steps (+ queries-rows 3))}))
+
 (defn- exception->str [e]
   (let [message (or (.getMessage e) (str (.getClass e)))]
     (if-let [form (-> e ex-data :form)]

@@ -36,13 +36,14 @@
       float: left;
     }
 
-    #menu-div > details {
+    #menu-div>details {
       margin: 12px;
     }
 
     #spread-spreadsheet {
       padding: 10px;
-      padding-right: 100px; /* Space for the user to resize the rightmost column. */
+      padding-right: 100px;
+      /* Space for the user to resize the rightmost column. */
       overflow: auto;
       display: block;
     }
@@ -52,7 +53,7 @@
       height: 20px;
     }
 
-    details > *:not(summary) {
+    details>*:not(summary) {
       margin-left: 1em;
     }
 
@@ -83,7 +84,27 @@
   let jspreadsheetObj;
   let currentFilePath = null;
 
+  function setStyleColor(style, command, color) {
+    style[command] = `background-color: ${color};`;
+  }
+
+  function getSpreadsheetStyle(spreadsheet) {
+    const style = {};
+    spreadsheet.commands.forEach(command => {
+      setStyleColor(style, command, "#B8E8FC");
+    });
+    spreadsheet.queries.forEach(command => {
+      setStyleColor(style, command, "#C8FFD4");
+    });
+    spreadsheet["initial-results"].forEach(command => {
+      setStyleColor(style, command, "#F9F3EE");
+    });
+
+    return style;
+  }
+
   function loadJSpreadsheet(spreadsheet) {
+    const style = getSpreadsheetStyle(spreadsheet);
     const jspreadsheetPayload = {
       data: spreadsheet.data,
       onevent: function (event, a, b, c, d, e, f) {
@@ -104,6 +125,7 @@
       onresizerow: function (_event) {
         saveSpreadsheetAndRunTests();
       },
+      style,
       rowResize: true,
       wordWrap: true,
     }
@@ -117,7 +139,9 @@
     for (let i = 0; i < table.length; i++) {
       for (let j = 0; j < table[i].length; j++) {
         const cellDOMElement = jspreadsheetObj.getCellFromCoords(j, i);
-        cellDOMElement.style.backgroundColor = "white";
+        if (cellDOMElement.style.backgroundColor === "lightpink") {
+          cellDOMElement.style.backgroundColor = "white";
+        }
       }
     }
   }

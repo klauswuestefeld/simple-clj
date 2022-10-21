@@ -41,8 +41,12 @@
 (defn- csv-read [_endpoint _user {:keys [filename]}]
   (let [relative-path   (str spread/all-spreadsheets-folder filename)
         data            (csv/read! relative-path)
-        dimensions      (layout/layout-get relative-path)]
-    (cond-> {:data data}
+        dimensions      (layout/layout-get relative-path)
+        {:keys [commands initial-results queries]} (spread/cells-info data)]
+    (cond-> {:data            data
+             :commands        commands
+             :initial-results initial-results
+             :queries         queries}
       dimensions (assoc :dimensions dimensions))))
 
 (defn- relevant? [file]
