@@ -84,21 +84,35 @@
   let jspreadsheetObj;
   let currentFilePath = null;
 
-  function setStyleColor(style, command, color) {
-    style[command] = `background-color: ${color};`;
+  function setStyleColor(style, cell, color) {
+    style[cell] = `background-color: ${color};`;
   }
 
   function getSpreadsheetStyle(spreadsheet) {
     const style = {};
-    spreadsheet.commands.forEach(command => {
-      setStyleColor(style, command, "#B8E8FC");
+    const properties = [
+      {
+        content: spreadsheet.commands,
+        color: "#B8E8FC"
+      }
+      ,
+      {
+        content: spreadsheet.queries,
+        color: "#C8FFD4"
+      }
+      , {
+        content: spreadsheet["initial-results"],
+        color: "#F9F3EE"
+      }
+    ];
+    
+    properties.forEach(property => {
+      const { color, content } = property;
+      content.forEach(cell => {
+        setStyleColor(style, cell, color);
+      })
     });
-    spreadsheet.queries.forEach(command => {
-      setStyleColor(style, command, "#C8FFD4");
-    });
-    spreadsheet["initial-results"].forEach(command => {
-      setStyleColor(style, command, "#F9F3EE");
-    });
+
 
     return style;
   }
