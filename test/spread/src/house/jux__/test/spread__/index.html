@@ -248,7 +248,9 @@
         summary.setAttribute("file-path", "/" + path + ".csv");
 
         summary.addEventListener("click", (ev) => {
-          if (ev.clientX > 23) {
+          const x = summary.getBoundingClientRect().x;
+          const elementTextX = x + 7;
+          if (ev.clientX > elementTextX) {
             ev.preventDefault();
             handleTestSelection(summary);
           }
