@@ -44,8 +44,19 @@
       padding: 10px;
       padding-right: 100px;
       /* Space for the user to resize the rightmost column. */
-      overflow: auto;
+      overflow: scroll;
       display: block;
+      max-width: 100%;
+    }
+
+    .jexcel>thead>tr>td {
+      position: static !important;
+    }
+
+    .sticky {
+      position: -webkit-sticky;
+      /* for Safari */
+      position: sticky;
     }
 
     #alert-container {
@@ -88,31 +99,54 @@
     style[cell] = `background-color: ${color};`;
   }
 
+  function applyStyle(spreadsheet) {
+    const queryLines = new Set(spreadsheet.queries.map(cell => {
+      const lineNumber = Number(cell.replace(/^\D+/g, ''));
+
+      return lineNumber;
+    }));
+    queryLines.forEach(queryLine => {
+      let top = 0;
+      let dataY = queryLine - 1;
+      const spreadsheetLine = document.querySelector(`[data-y="${dataY}"]`);
+      spreadsheetLine.classList.add("sticky");
+      while (dataY > 0) {
+        if (dataY > 1) {
+          const previousSpreadsheetLine = document.querySelector(`[data-y="${dataY - 1}"]`);
+          top += previousSpreadsheetLine.getBoundingClientRect().height;
+        }
+        dataY--;
+      }
+
+      spreadsheetLine.style.top = top + "px";
+    });
+  }
+
   function getSpreadsheetStyle(spreadsheet) {
     const style = {};
     const properties = [
       {
-        content: spreadsheet.commands,
+        cells: spreadsheet.commands,
         color: "#B8E8FC"
       }
       ,
       {
-        content: spreadsheet.queries,
+        cells: spreadsheet.queries,
         color: "#C8FFD4"
       }
-      , {
-        content: spreadsheet["initial-results"],
+      ,
+      {
+        cells: spreadsheet["initial-results"],
         color: "#F9F3EE"
       }
     ];
-    
+
     properties.forEach(property => {
-      const { color, content } = property;
-      content.forEach(cell => {
+      const { color, cells } = property;
+      cells.forEach(cell => {
         setStyleColor(style, cell, color);
       })
     });
-
 
     return style;
   }
@@ -292,6 +326,7 @@
     displayTestStatusAlert("");
 
     loadJSpreadsheet(spreadsheet);
+    applyStyle(spreadsheet);
     currentFilePath = filePath;
   }
 
