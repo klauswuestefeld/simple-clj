@@ -97,6 +97,15 @@
   let jspreadsheetObj;
   let currentFilePath = null;
 
+  function convertLetterToNumber(str) {
+    let num = 0;
+    const len = str.length;
+    for (pos = 0; pos < len; pos++) {
+      num += (str.charCodeAt(pos) - 64) * Math.pow(26, len - pos - 1);
+    }
+    return num - 1;
+  }
+
   function setStyleColor(style, cell, color) {
     style[cell] = `background-color: ${color};`;
   }
@@ -121,6 +130,22 @@
       }
 
       spreadsheetLine.style.top = top + "px";
+    });
+
+    const commandCells = spreadsheet.commands;
+    commandCells.forEach(cell => {
+      const column = Array.from(cell)[0];
+      const row = Array.from(cell)[1];
+      const cellDOMElement = jspreadsheetObj.getCell(cell);
+      cellDOMElement.classList.add('sticky');
+      let left = 0;
+      let columnIdx = convertLetterToNumber(column);
+      while (columnIdx > 0) {
+        const previousCellDOMElement = jspreadsheetObj.getCellFromCoords(columnIdx - 1, row);
+        left += previousCellDOMElement.getBoundingClientRect().width;
+        columnIdx--;
+      }
+      cellDOMElement.style.left = left + "px";
     });
   }
 
