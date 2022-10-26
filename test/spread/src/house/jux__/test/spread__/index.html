@@ -140,8 +140,9 @@
       cellDOMElement.classList.add('sticky');
       let left = 0;
       let columnIdx = convertLetterToNumber(column);
+      let rowIdx = row - 1;
       while (columnIdx > 0) {
-        const previousCellDOMElement = jspreadsheetObj.getCellFromCoords(columnIdx - 1, row);
+        const previousCellDOMElement = jspreadsheetObj.getCellFromCoords(columnIdx - 1, rowIdx);
         left += previousCellDOMElement.getBoundingClientRect().width;
         columnIdx--;
       }
