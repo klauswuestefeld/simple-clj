@@ -51,8 +51,7 @@
 
 (defn- relevant? [file]
   (or (.isDirectory file)
-      (spread/test-file? file)
-      (-> file .getName (= spread/require-filename))))
+      (spread/test-file? file)))
 
 (def all-test-dirs
   (->> spread/all-spreadsheets-folder
