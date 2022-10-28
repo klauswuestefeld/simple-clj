@@ -38,35 +38,29 @@
     (layout/layout-save relative-path spreadsheet-dimensions)
     (run-tests endpoint user params)))
 
-(defn- get-general-tests [relative-path]
-  (let [paths (string/split relative-path #"/")
-        fixed (->> paths (take 2) (string/join "/"))
-        variable-paths (drop 2 paths)]
-    (-> (reduce (fn [acc cv]
-                  (let [path (str (:current-path acc) "/" cv)
-                        require-path (str path "/" spread/require-filename-suffix)
-                        ret (assoc acc :current-path path)]
-                    (if (-> require-path java.io/file .exists)
-                      (assoc ret (-> path java.io/file .getName) (csv/read! require-path))
-                      ret)))
-                {:current-path fixed}
-                variable-paths)
-        (dissoc :current-path))))
+(defn- accumulate-general-tests [acc file]
+  (if (= file spread/all-spreadsheets-folder)
+    acc
+    (let [parent-file  (.getParentFile file)
+          require-file (-> parent-file .getPath (str "/" spread/require-filename-suffix) java.io/file)
+          acc (if (.exists require-file)
+                (conj acc (csv/read! require-file))
+                acc)]
+      (accumulate-general-tests acc parent-file))))
 
-(defn- require-tree [relative-path]
+(defn- require-list [relative-path]
   (let [specific-test (string/replace relative-path #".csv" ".require.csv")]
-    (cond-> (get-general-tests relative-path)
-      (-> specific-test 
-          java.io/file 
-          .exists)    (assoc (-> specific-test java.io/file .getName) 
-                             (csv/read! specific-test)))))
+    (cond-> (accumulate-general-tests #{} (java.io/file relative-path))
+      (-> specific-test
+          java.io/file
+          .exists)    (conj (csv/read! specific-test)))))
 
 (defn- csv-read [_endpoint _user {:keys [filename]}]
   (let [relative-path   (str spread/all-spreadsheets-folder filename)
         data            (csv/read! relative-path)
         dimensions      (layout/layout-get relative-path)
         {:keys [commands initial-results queries]} (spread/cells-info data)
-        requires        (require-tree relative-path)]
+        requires        (require-list relative-path)]
     (cond-> {:data            data
              :commands        commands
              :initial-results initial-results
