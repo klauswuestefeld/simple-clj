@@ -26,6 +26,9 @@
       margin: 0px;
       padding: 0px;
       height: 100%;
+      display: grid;
+      grid-template-columns: 350px 1fr;
+      grid-template-rows: 10% 1fr;
     }
 
     #menu-div {
@@ -34,20 +37,31 @@
       background-color: #f5f5f5;
       height: 100%;
       float: left;
+      grid-row: 1/3;
     }
 
     #menu-div>details {
       margin: 12px;
     }
 
-    #spread-spreadsheet {
+    #main-spreadsheet,
+    #require-spreadsheet {
       padding: 10px;
       padding-right: 100px;
       /* Space for the user to resize the rightmost column. */
-      overflow: scroll;
+      overflow: auto;
       display: block;
-      max-width: 75%;
       max-height: 100%;
+    }
+
+    #main-spreadsheet {
+      grid-row: 2/3;
+    }
+
+    require-list {
+      padding: 10px;
+      overflow-y: scroll;
+      grid-row: 1/2;
     }
 
     .jexcel>thead>tr>td {
@@ -91,10 +105,11 @@
     <div id="alert-container">
     </div>
   </div>
-  <div id="spread-spreadsheet"></div>
+  <div id="main-spreadsheet"></div>
 </body>
 <script>
   let jspreadsheetObj;
+  let jspreadsheetRequireObj;
   let currentFilePath = null;
 
   function convertLetterToNumber(str) {
@@ -169,19 +184,18 @@
       }
     ];
 
-    properties.forEach(property => {
+    properties?.forEach(property => {
       const { color, cells } = property;
-      cells.forEach(cell => {
+      cells?.forEach(cell => {
         setStyleColor(style, cell, color);
-      })
+      });
     });
 
     return style;
   }
 
-  function loadJSpreadsheet(spreadsheet) {
-    const style = getSpreadsheetStyle(spreadsheet);
-    const jspreadsheetPayload = {
+  function loadJSpreadsheet(spreadsheet, htmlElement) {
+    const payload = {
       data: spreadsheet.data,
       onevent: function (event, a, b, c, d, e, f) {
         // console.log(event, a, b, c, d, e, f);
@@ -201,13 +215,13 @@
       onresizerow: function (_event) {
         saveSpreadsheetAndRunTests();
       },
-      style,
+      style: getSpreadsheetStyle(spreadsheet),
       rowResize: true,
       wordWrap: true,
     }
-    if (spreadsheet?.dimensions?.columns) jspreadsheetPayload.columns = spreadsheet.dimensions.columns;
-    if (spreadsheet?.dimensions?.rows) jspreadsheetPayload.rows = spreadsheet.dimensions.rows;
-    jspreadsheetObj = jspreadsheet(document.getElementById("spread-spreadsheet"), jspreadsheetPayload);
+    if (spreadsheet?.dimensions?.columns) payload.columns = spreadsheet.dimensions.columns;
+    if (spreadsheet?.dimensions?.rows) payload.rows = spreadsheet.dimensions.rows;
+    return jspreadsheet(htmlElement, payload);
   }
 
   function clearErrorHighlights() {
@@ -250,7 +264,6 @@
   function displayTestError(msg) {
     displayTestStatusAlert(msg, "red");
   }
-
 
   async function handleTestResponse(response) {
     if (response.ok) {
@@ -346,13 +359,43 @@
     if (response.ok) return await response.json();
   }
 
+  function requireListDOMElement(requires) {
+    const result = document.createElement("require-list");
+    const details = document.createElement("details");
+
+    const summary = document.createElement("summary");
+    summary.textContent = "require";
+    details.appendChild(summary);
+
+    Object.keys(requires).forEach(name => {
+      document.querySelector("#require-spreadsheet")?.remove();
+      const element = document.createElement("require-spreadsheet");
+      element.id = "require-spreadsheet";
+      jspreadsheetRequireObj = loadJSpreadsheet({ data: requires[name] }, element);
+      details.appendChild(element);
+    });
+
+    result.appendChild(details);
+
+    return result;
+  }
+
+  function renderRequireList(requires) {
+    document.querySelector("require-list")?.remove();
+    document.body.appendChild(requireListDOMElement(requires));
+  }
+
   async function loadTestSpreadsheet(filePath) {
     const spreadsheet = await getSpreadsheet(filePath);
 
-    const spreadsheetDOMElement = document.querySelector("#spread-spreadsheet");
+    const spreadsheetDOMElement = document.querySelector("#main-spreadsheet");
     Array.from(spreadsheetDOMElement?.children)?.forEach(child => child.remove());
 
-    loadJSpreadsheet(spreadsheet);
+    if (spreadsheet.requires) {
+      renderRequireList(spreadsheet.requires);
+    }
+
+    jspreadsheetObj = loadJSpreadsheet(spreadsheet, spreadsheetDOMElement);
     applyStyle(spreadsheet);
     currentFilePath = filePath;
   }

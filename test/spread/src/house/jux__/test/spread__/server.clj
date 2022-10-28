@@ -38,15 +38,32 @@
     (layout/layout-save relative-path spreadsheet-dimensions)
     (run-tests endpoint user params)))
 
+(defn- require-tree [relative-path]
+  (let [paths (string/split relative-path #"/")
+        fixed (->> paths (take 2) (string/join "/"))
+        variable-paths (drop 2 paths)]
+    (-> (reduce (fn [acc cv]
+                  (let [path (str (:current-path acc) "/" cv)
+                        require-path (str path "/" spread/require-filename)
+                        ret (assoc acc :current-path path)]
+                    (if (-> require-path java.io/file .exists)
+                      (assoc ret (-> path java.io/file .getName) (csv/read! require-path))
+                      ret)))
+                {:current-path fixed}
+                variable-paths)
+        (dissoc :current-path))))
+
 (defn- csv-read [_endpoint _user {:keys [filename]}]
   (let [relative-path   (str spread/all-spreadsheets-folder filename)
         data            (csv/read! relative-path)
         dimensions      (layout/layout-get relative-path)
-        {:keys [commands initial-results queries]} (spread/cells-info data)]
+        {:keys [commands initial-results queries]} (spread/cells-info data)
+        requires        (require-tree relative-path)]
     (cond-> {:data            data
              :commands        commands
              :initial-results initial-results
-             :queries         queries}
+             :queries         queries
+             :requires        requires}
       dimensions (assoc :dimensions dimensions))))
 
 (defn- relevant? [file]
