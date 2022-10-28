@@ -319,17 +319,22 @@
          (filter #(= (.getName %) target-name))
          first)))
 
-(def require-filename "require.csv")
+(def require-filename-suffix "require.csv")
 
 (defn test-file? [file]
   (let [name (.getName file)]
     (and (string/ends-with? name ".csv")
-         (not= name require-filename))))
+         (not (.endsWith name require-filename-suffix)))))
 
 (defn- requirements [folder]
-  (let [requires-file (java.io/file folder require-filename)]
-    (if (.exists requires-file)
-      (parse-requires requires-file)
+  (let [requires-files (->> folder
+                            java.io/file
+                            .listFiles
+                            (filter #(.endsWith (.getName %) require-filename-suffix)))]
+    (if (seq requires-files)
+      (->> requires-files
+           (map parse-requires)
+           (into {}))
       nil)))
 
 (defn- run-tests-in-folder! [parent-context subject-namespace folder]
