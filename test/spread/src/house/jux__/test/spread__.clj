@@ -326,26 +326,35 @@
     (and (string/ends-with? name ".csv")
          (not (.endsWith name require-filename-suffix)))))
 
-(defn- requirements [folder]
-  (let [requires-files (->> folder
-                            java.io/file
-                            .listFiles
-                            (filter #(.endsWith (.getName %) require-filename-suffix)))]
-    (if (seq requires-files)
-      (->> requires-files
-           (map parse-requires)
-           (into {}))
-      nil)))
+(defn- file->specific-require-filename [file]
+  (string/replace (.getName file) #".csv" (str "." require-filename-suffix)))
+
+(defn- parse-requires-if-exists [file]
+  (if (.exists file) (parse-requires file) nil))
+
+(defn- specific-requirements [folder file]
+  (let [requires-filename (file->specific-require-filename file)
+        requires-file     (java.io/file folder requires-filename)]
+    (parse-requires-if-exists requires-file)))
+
+(defn- general-requirements [folder]
+  (let [requires-file (java.io/file folder require-filename-suffix)]
+    (parse-requires-if-exists requires-file)))
 
 (defn- run-tests-in-folder! [parent-context subject-namespace folder]
-  (let [requirements (requirements folder)
+  (let [requirements (general-requirements folder)
         context      (cond-> parent-context
-                       requirements (update :all-requirements (fnil conj []) requirements))
+                       requirements (update :all-requirements (fnil conj #{}) requirements))
         children     (sorted-files folder)]
     (->> children
          (filter test-file?)
          (run! (fn [file]
-                 (let [new-context (run-test-in-file! context subject-namespace file)]
+                 (let [specific-requirements (specific-requirements folder file)
+                       context (cond-> context
+                                 specific-requirements (update :all-requirements (fnil conj #{}) specific-requirements))
+                       new-context (-> context
+                                       (run-test-in-file! subject-namespace file)
+                                       (update :all-requirements disj specific-requirements))]
                    (when-let [subfolder (corresponding-subfolder children file)]
                      (run-tests-in-folder! new-context subject-namespace subfolder))))))))
 
