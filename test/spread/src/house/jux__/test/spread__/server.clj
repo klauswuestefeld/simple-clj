@@ -32,7 +32,7 @@
                         {:stacktrace (with-out-str (stacktrace/print-cause-trace e))}))))))
 
 (defn- save-and-run [endpoint user {:keys [filename spreadsheet-data spreadsheet-dimensions] :as params}]
-  (let [relative-path   (str spread/all-spreadsheets-folder filename)]
+  (let [relative-path (str spread/all-spreadsheets-folder filename)]
     (when filename
       (csv/write! relative-path spreadsheet-data))
     (layout/layout-save relative-path spreadsheet-dimensions)
