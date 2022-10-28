@@ -195,26 +195,26 @@
     return style;
   }
 
-  function loadJSpreadsheet(spreadsheet, htmlElement) {
+  function loadJSpreadsheet(spreadsheet, htmlElement, eventHandlers) {
     const payload = {
       data: spreadsheet.data,
       onevent: function (event, a, b, c, d, e, f) {
         // console.log(event, a, b, c, d, e, f);
       },
       onopenworksheet: function (_worksheet, worksheetIndex) {
-        removeTestStatusAlert();
+        eventHandlers?.onopenworksheet();
       },
       oncreateworksheet: function (_event) {
-        removeTestStatusAlert();
+        eventHandlers?.oncreateworksheet();
       },
       onchange: function (_event) {
-        saveSpreadsheetAndRunTests();
+        eventHandlers?.onchange();
       },
       onresizecolumn: function (_event) {
-        saveSpreadsheetAndRunTests();
+        eventHandlers?.onresizecolumn();
       },
       onresizerow: function (_event) {
-        saveSpreadsheetAndRunTests();
+        eventHandlers?.onresizerow();
       },
       style: getSpreadsheetStyle(spreadsheet),
       rowResize: true,
@@ -396,7 +396,13 @@
       renderRequireList(spreadsheet.requires);
     }
 
-    jspreadsheetObj = loadJSpreadsheet(spreadsheet, spreadsheetDOMElement);
+    const eventHandlers = {
+      onchange: saveSpreadsheetAndRunTests,
+      onresizecolumn: saveSpreadsheetAndRunTests,
+      onresizerow: saveSpreadsheetAndRunTests
+    };
+
+    jspreadsheetObj = loadJSpreadsheet(spreadsheet, spreadsheetDOMElement, eventHandlers);
     applyStyle(spreadsheet);
     currentFilePath = filePath;
   }
