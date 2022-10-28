@@ -28,7 +28,6 @@
       height: 100%;
       display: grid;
       grid-template-columns: 350px 1fr;
-      grid-template-rows: 10% 1fr;
     }
 
     #menu-div {
@@ -37,32 +36,37 @@
       background-color: #f5f5f5;
       height: 100%;
       float: left;
-      grid-row: 1/3;
+      grid-column: 1/2;
     }
 
     #menu-div>details {
       margin: 12px;
     }
 
-    #main-spreadsheet,
-    #require-spreadsheet {
+    spread-main {
+      display: block;
+      grid-column: 2/3;
+      min-width: 0;
+      min-height: 0;
+    }
+
+    #spreadtests-spreadsheet {
       padding: 10px;
       padding-right: 100px;
       /* Space for the user to resize the rightmost column. */
       overflow: auto;
       display: block;
       max-height: 100%;
-    }
-
-    #main-spreadsheet {
-      grid-row: 2/3;
       height: fit-content;
     }
 
-    require-list {
+    require-section {
       padding: 10px;
-      overflow-y: scroll;
-      grid-row: 1/2;
+      display: block;
+    }
+
+    require-list {
+      display: block;
     }
 
     .jexcel>thead>tr>td {
@@ -106,11 +110,12 @@
     <div id="alert-container">
     </div>
   </div>
-  <div id="main-spreadsheet"></div>
+  <spread-main>
+    <div id="spreadtests-spreadsheet"></div>
+  </spread-main>
 </body>
 <script>
   let jspreadsheetObj;
-  let jspreadsheetRequireObj;
   let currentFilePath = null;
 
   function convertLetterToNumber(str) {
@@ -361,19 +366,27 @@
   }
 
   function requireListDOMElement(requires) {
-    const result = document.createElement("require-list");
+    const result = document.createElement("require-section");
     const details = document.createElement("details");
 
     const summary = document.createElement("summary");
-    summary.textContent = "require";
+    summary.style.cursor = "pointer";
+    summary.textContent = "Require";
     details.appendChild(summary);
 
+    const list = document.createElement("require-list");
+    details.appendChild(list);
+
     Object.keys(requires).forEach(name => {
-      document.querySelector("#require-spreadsheet")?.remove();
-      const element = document.createElement("require-spreadsheet");
-      element.id = "require-spreadsheet";
-      jspreadsheetRequireObj = loadJSpreadsheet({ data: requires[name] }, element);
-      details.appendChild(element);
+      requires[name].forEach(require => {
+        const p = document.createElement("p");
+        const requireData = [...require];
+        const requireNamespace = requireData[0];
+        requireData.shift();
+        const refers = requireData.join(", ");
+        p.textContent = `${requireNamespace} :refer [${refers}]`;
+        list.appendChild(p);
+      });
     });
 
     result.appendChild(details);
@@ -382,14 +395,15 @@
   }
 
   function renderRequireList(requires) {
-    document.querySelector("require-list")?.remove();
-    document.body.appendChild(requireListDOMElement(requires));
+    document.querySelector("require-section")?.remove();
+    const spreadMain = document.querySelector("spread-main");
+    spreadMain.insertBefore(requireListDOMElement(requires), spreadMain.firstChild);
   }
 
   async function loadTestSpreadsheet(filePath) {
     const spreadsheet = await getSpreadsheet(filePath);
 
-    const spreadsheetDOMElement = document.querySelector("#main-spreadsheet");
+    const spreadsheetDOMElement = document.querySelector("#spreadtests-spreadsheet");
     Array.from(spreadsheetDOMElement?.children)?.forEach(child => child.remove());
 
     if (spreadsheet.requires) {
