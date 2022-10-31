@@ -98,6 +98,11 @@
       background-color: #0000FF;
     }
 
+    .cell-with-error {
+      /* Overrides jspreadsheet css */
+      background-color: #FFB6C1 !important;
+    }
+
     .selected-test {
       background-color: #0000FF;
       color: #FFF;
@@ -235,24 +240,20 @@
     for (let i = 0; i < table.length; i++) {
       for (let j = 0; j < table[i].length; j++) {
         const cellDOMElement = jspreadsheetObj.getCellFromCoords(j, i);
-        if (cellDOMElement.style.backgroundColor === "#FFB6C1") {
-          cellDOMElement.style.backgroundColor = "#FFF";
-        }
+        cellDOMElement.classList.remove("cell-with-error");
       }
     }
   }
 
   function displayTestStatusAlert(message, textColor) {
-    const old = document.querySelector("#test-status-alert");
-    old?.remove();
+    const container = document.querySelector("#alert-container");
+    Array.from(container.children)?.forEach(child => child.remove());
 
     const alert = document.createElement("p");
-    alert.id = "test-status-alert";
     alert.textContent = message;
 
     if (textColor) alert.style.color = textColor;
 
-    const container = document.querySelector("#alert-container");
     container.appendChild(alert);
   }
 
@@ -283,7 +284,7 @@
         await handleTestSelection(spreadsheetElement);
 
         const cellDOMElement = jspreadsheetObj.getCell(cell);
-        cellDOMElement.style.backgroundColor = "#FFB6C1";
+        cellDOMElement.classList.add("cell-with-error");
 
         displayTestError(body.message);
       } else if (body["ex-data"] && body["ex-data"].stacktrace) {
