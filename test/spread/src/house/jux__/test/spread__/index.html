@@ -33,7 +33,7 @@
     #menu-div {
       display: none;
       width: 350px;
-      background-color: #f5f5f5;
+      background-color: #F5F5F5;
       height: 100%;
       float: left;
       grid-column: 1/2;
@@ -95,12 +95,12 @@
     }
 
     .command-cell {
-      background-color: blue;
+      background-color: #0000FF;
     }
 
     .selected-test {
-      background-color: blue;
-      color: white;
+      background-color: #0000FF;
+      color: #FFF;
     }
   </style>
 </head>
@@ -235,8 +235,8 @@
     for (let i = 0; i < table.length; i++) {
       for (let j = 0; j < table[i].length; j++) {
         const cellDOMElement = jspreadsheetObj.getCellFromCoords(j, i);
-        if (cellDOMElement.style.backgroundColor === "lightpink") {
-          cellDOMElement.style.backgroundColor = "white";
+        if (cellDOMElement.style.backgroundColor === "#FFB6C1") {
+          cellDOMElement.style.backgroundColor = "#FFF";
         }
       }
     }
@@ -261,14 +261,14 @@
   }
 
   function displayTestsPassed() {
-    displayTestStatusAlert("All tests passed (Just now)", "green");
+    displayTestStatusAlert("All tests passed (Just now)", "#008000");
     setTimeout(() => {
-      displayTestStatusAlert("All tests passed", "green")
+      displayTestStatusAlert("All tests passed", "#008000")
     }, 3000);
   }
 
   function displayTestError(msg) {
-    displayTestStatusAlert(msg, "red");
+    displayTestStatusAlert(msg, "#FF0000");
   }
 
   async function handleTestResponse(response) {
@@ -283,11 +283,11 @@
         await handleTestSelection(spreadsheetElement);
 
         const cellDOMElement = jspreadsheetObj.getCell(cell);
-        cellDOMElement.style.backgroundColor = "lightpink";
+        cellDOMElement.style.backgroundColor = "#FFB6C1";
 
         displayTestError(body.message);
       } else if (body["ex-data"] && body["ex-data"].stacktrace) {
-        displayTestError("Exception\n\n" + body["ex-data"].stacktrace)
+        displayTestError("Exception\n\n" + body["ex-data"].stacktrace);
       } else {
         displayTestError(body.message);
       }
