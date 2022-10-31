@@ -54,9 +54,9 @@
     (reset! previous-query-results result)
     result))
 
-(defn- check-cell! [condition otherwise-msg coords]
+(defn- check-cell! [condition otherwise-msg info]
   (when-not condition
-    (let [error-map (assoc coords :spreadsheet *test-spreadsheet*)]
+    (let [error-map (assoc info :spreadsheet *test-spreadsheet*)]
       (throw (ex-info otherwise-msg error-map)))))
 
 (defn- ->letter [idx]
@@ -209,7 +209,7 @@
                            (check-cell! false (str "Error evaluating expected result:" (exception->str e)) coords))))]
         (check-cell! (= actual expected)
                      (str "Actual result was:\n" (if (some? actual) (prn-str actual) "nil"))
-                     coords)))))
+                     (assoc coords :actual-value actual))))))
 
 (defn list-insert [lst elem index]
   (let [[l r] (split-at index lst)]

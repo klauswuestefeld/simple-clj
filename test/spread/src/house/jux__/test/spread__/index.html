@@ -81,8 +81,14 @@
     }
 
     #alert-container {
-      padding: 0 12px;
+      padding: 12px;
       height: 20px;
+      display: flex;
+      flex-flow: column;
+    }
+
+    #alert-container p {
+      margin: 0;
     }
 
     details>*:not(summary) {
@@ -264,12 +270,25 @@
   function displayTestsPassed() {
     displayTestStatusAlert("All tests passed (Just now)", "#008000");
     setTimeout(() => {
-      displayTestStatusAlert("All tests passed", "#008000")
+      displayTestStatusAlert("All tests passed", "#008000");
     }, 3000);
   }
 
   function displayTestError(msg) {
     displayTestStatusAlert(msg, "#FF0000");
+  }
+
+  function useItButton(cell, actualValue) {
+    const result = document.createElement("button");
+    result.textContent = "Use It!";
+    result.addEventListener("click", () => jspreadsheetObj.setValue(cell, actualValue));
+
+    return result;
+  }
+
+  function displayUseItButton(cell, actualValue) {
+    const container = document.querySelector("#alert-container");
+    container.appendChild(useItButton(cell, actualValue));
   }
 
   async function handleTestResponse(response) {
@@ -287,6 +306,9 @@
         cellDOMElement.classList.add("cell-with-error");
 
         displayTestError(body.message);
+        if (body["ex-data"]["actual-value"]) {
+          displayUseItButton(cell, body["ex-data"]["actual-value"]);
+        }
       } else if (body["ex-data"] && body["ex-data"].stacktrace) {
         displayTestError("Exception\n\n" + body["ex-data"].stacktrace);
       } else {
