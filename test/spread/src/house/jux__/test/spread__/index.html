@@ -113,6 +113,38 @@
       background-color: #0000FF;
       color: #FFF;
     }
+
+    context-menu {
+      width: 100px;
+      background-color: #fff;
+      position: absolute;
+      z-index: 10;
+      border: 1px solid #bbb;
+      display: flex;
+      align-items: center;
+      flex-direction: column;
+      font-size: 12px;
+    }
+
+    context-menu>li {
+      list-style-type: none;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      padding: 3px 0;
+      margin: 2px 0;
+    }
+
+    context-menu>li:hover {
+      background-color: #e2e2e2;
+    }
+
+    context-menu>li>p {
+      cursor: pointer;
+      margin: 0;
+      display: inline;
+      color: #737373
+    }
   </style>
 </head>
 
@@ -452,6 +484,63 @@
     highlightSelectedTest(htmlElement);
   }
 
+  function mouseX(evt) {
+    if (evt.pageX) {
+      return evt.pageX;
+    } else if (evt.clientX) {
+      return evt.clientX + (document.documentElement.scrollLeft ?
+        document.documentElement.scrollLeft :
+        document.body.scrollLeft);
+    } else {
+      return null;
+    }
+  }
+
+  function mouseY(evt) {
+    if (evt.pageY) {
+      return evt.pageY;
+    } else if (evt.clientY) {
+      return evt.clientY + (document.documentElement.scrollTop ?
+        document.documentElement.scrollTop :
+        document.body.scrollTop);
+    } else {
+      return null;
+    }
+  }
+
+
+  function contextItem(text, action) {
+    const result = document.createElement("li");
+    const p = document.createElement("p");
+    p.textContent = text;
+    result.appendChild(p);
+    result.addEventListener("click", action);
+
+    return result;
+  }
+
+  function contextMenu(filePath) {
+    const result = document.createElement("context-menu");
+
+    const renameLine = contextItem("Rename", () => alert("Not implemented yet"));
+    const duplicateLine = contextItem("Duplicate", () => alert("Not implemented yet"));
+    const deleteLine = contextItem("Delete", () => alert("Not implemented yet"));
+
+    result.append(renameLine, duplicateLine, deleteLine);
+
+    return result;
+  }
+
+  function renderContextMenu(e) {
+    document.querySelector("context-menu")?.remove();
+    const filePath = e.target.getAttribute("file-path");
+    const menu = contextMenu(filePath);
+    menu.style.top = mouseY(e) + "px";
+    menu.style.left = mouseX(e) + "px";
+    document.body.appendChild(menu);
+    e.preventDefault();
+  }
+
   function appendElementToMenu(menu, el, topLevel) {
     const { name, children, path } = el;
     if (children) {
@@ -467,6 +556,11 @@
 
       if (!topLevel) {
         summary.setAttribute("file-path", "/" + path + ".csv");
+        summary.classList.add("context-menu-target");
+
+        summary.addEventListener("contextmenu", function (e) {
+          renderContextMenu(e);
+        }, false);
 
         summary.addEventListener("click", (ev) => {
           const x = summary.getBoundingClientRect().x;
@@ -488,11 +582,16 @@
 
       p.setAttribute("file-path", "/" + path);
       p.addEventListener("click", (_ev) => handleTestSelection(p));
+      p.classList.add("context-menu-target");
+      p.addEventListener("contextmenu", function (e) {
+        renderContextMenu(e);
+      }, false);
     }
   }
 
   async function getTestTree() {
     const response = await fetch("/api/get-test-tree");
+
     return await response.json();
   }
 
@@ -509,14 +608,23 @@
   }
 
   function replaceCtrlEnterWithAltEnter(ev) {
-    if (ev.ctrlKey && ev.key === 'Enter') {
+    if (ev.ctrlKey && ev.key === "Enter") {
       ev.preventDefault();
       ev.stopPropagation();
-      ev.target.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, altKey: true, which: 13 }));
+      ev.target.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true, altKey: true, which: 13 }));
     }
   }
-  document.body.addEventListener('keydown', replaceCtrlEnterWithAltEnter);
 
+  function attachEventHandlers() {
+    document.body.addEventListener("keydown", replaceCtrlEnterWithAltEnter);
+    document.addEventListener("click", () => document.querySelector("context-menu")?.remove());
+    document.addEventListener("contextmenu", (ev) => {
+      if (ev.target.classList.contains("context-menu-target")) return;
+      document.querySelector("context-menu")?.remove();
+    });
+  }
+
+  attachEventHandlers();
   loadTestsTree();
   runTests();
 </script>
