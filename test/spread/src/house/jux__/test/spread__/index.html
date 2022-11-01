@@ -279,6 +279,7 @@
   }
 
   function useItButton(cell, actualValue) {
+    if (typeof actualValue === "string") actualValue = `"${actualValue}"`;
     const result = document.createElement("button");
     result.textContent = "Use It!";
     result.addEventListener("click", () => jspreadsheetObj.setValue(cell, actualValue));
