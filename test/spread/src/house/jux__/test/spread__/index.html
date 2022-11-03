@@ -300,9 +300,13 @@
   }
 
   function displayTestsPassed() {
-    displayTestStatusAlert("All tests passed (Just now)", "#008000");
+    const passedNowTxt = "All tests passed (Just now)";
+    displayTestStatusAlert(passedNowTxt, "#008000");
     setTimeout(() => {
-      displayTestStatusAlert("All tests passed", "#008000");
+      const container = document.querySelector("#alert-container");
+      if (container.textContent.trim() === passedNowTxt) {
+        displayTestStatusAlert("All tests passed", "#008000");
+      }
     }, 3000);
   }
 
