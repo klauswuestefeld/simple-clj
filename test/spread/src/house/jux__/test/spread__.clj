@@ -170,10 +170,10 @@
       message)))
 
 (defn- check-exception! [actual expected coords]
-  (check-cell! (or (= expected "X")
-                   (-> actual .getMessage (= expected)))
-               (exception->str actual)
-               coords))
+  (when (and (not= expected "X")
+             (-> actual .getMessage (not= expected)))
+    (.printStackTrace actual)
+    (check-cell! false (exception->str actual) coords)))
 
 (defn- deep-flatten [v]
   (tree-seq coll? seq v))
@@ -238,7 +238,6 @@
     (binding [*user* (eval-user user)]
       (reduce execute-query-segment state (remove string/blank? segments)))
     (catch Throwable e
-      (.printStackTrace e)
       e)))
 
 (defn- execute-query [state query-results-line query-column-number [user & segments] expected-result]
