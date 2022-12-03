@@ -303,8 +303,8 @@
       (eval-requires namespace requirements))))
 
 (defn- run-test-in-file! [{:as context :keys [all-requirements state]} subject-namespace file]
-  (binding [*ns* (find-ns 'house.jux--.test.spread--)
-            *test-spreadsheet* (.getName file)] ; TODO: find a cleaner way. This can be any ns just to set the root binding of *ns*
+  (binding [*ns* (find-ns 'house.jux--.test.spread--)  ; TODO: find a cleaner way. This can be any ns just to set the root binding of *ns*
+            *test-spreadsheet* (.getName file)]
     (let [relative-path       (.getPath file)
           test-map            (-> relative-path parse-csv csv->test-map)]
       (init-requires subject-namespace all-requirements)
