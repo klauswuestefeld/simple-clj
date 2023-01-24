@@ -264,6 +264,12 @@
       onresizerow: function (_event) {
         eventHandlers?.onresizerow();
       },
+      ondeleterow: function (_event) {
+        eventHandlers?.ondeleterow();
+      },
+      ondeletecolumn: function (_event) {
+        eventHandlers?.ondeletecolumn();
+      },
       style: getSpreadsheetStyle(spreadsheet),
       rowResize: true,
       wordWrap: true,
@@ -473,7 +479,9 @@
     const eventHandlers = {
       onchange: saveSpreadsheetAndRunTests,
       onresizecolumn: saveSpreadsheetAndRunTests,
-      onresizerow: saveSpreadsheetAndRunTests
+      onresizerow: saveSpreadsheetAndRunTests,
+      ondeleterow: saveSpreadsheetAndRunTests,
+      ondeletecolumn: saveSpreadsheetAndRunTests,
     };
 
     jspreadsheetObj = loadJSpreadsheet(spreadsheet, spreadsheetDOMElement, eventHandlers);
