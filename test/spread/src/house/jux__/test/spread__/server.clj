@@ -22,14 +22,21 @@
       (resource-response "house/jux__/test/spread__/index.html")
       (delegate request))))
 
+(defn- unpack-actual-exception-if-necessary [exception]
+  (let [actual (or (-> exception ex-data :actual-exception)
+                   exception)
+        data (-> exception
+                 ex-data
+                 (dissoc :actual-exception)
+                 (assoc :stacktrace (with-out-str (stacktrace/print-cause-trace actual))))
+        msg (or (.getMessage actual) (str (.getClass actual)))]
+    (ex-info msg data actual)))
+
 (defn- run-tests [_endpoint _user _]
   (try
     (spread/run-all-tests!)
     (catch RuntimeException e
-      (throw (if (ex-data e)
-               e
-               (ex-info (.getMessage e)
-                        {:stacktrace (with-out-str (stacktrace/print-cause-trace e))}))))))
+      (throw (unpack-actual-exception-if-necessary e)))))
 
 (defn- save-and-run [endpoint user {:keys [filename spreadsheet-data spreadsheet-dimensions] :as params}]
   (let [relative-path (str spread/all-spreadsheets-folder filename)]

@@ -54,10 +54,12 @@
     (reset! previous-query-results result)
     result))
 
-(defn- check-cell! [condition otherwise-msg info]
+(defn- throw-info! [msg info]
+   (throw (ex-info msg (assoc info :spreadsheet *test-spreadsheet*))))
+
+(defn- check-info! [condition otherwise-msg info]
   (when-not condition
-    (let [error-map (assoc info :spreadsheet *test-spreadsheet*)]
-      (throw (ex-info otherwise-msg error-map)))))
+    (throw-info! otherwise-msg info)))
 
 (defn- ->letter [idx]
   (->> idx (nth "ABCDEFGHIJKLMNOPQRSTUVWXYZ") str))
@@ -97,10 +99,10 @@
     (update raw-steps 0 ->initial-step)))
 
 (defn- check-blanks! [parsed-csv]
-  (check-cell! (not (string/blank? (-> parsed-csv first first))) "The test needs a description" {:column "A", :line 1})
+  (check-info! (not (string/blank? (-> parsed-csv first first))) "The test needs a description" {:column "A", :line 1})
   (->> parsed-csv
        (map-indexed (fn [line-number values]
-                      (check-cell! (not (string/blank? (apply str values)))
+                      (check-info! (not (string/blank? (apply str values)))
                                    "Please, remove blank line"
                                    {:column "A"
                                     :line   (inc line-number)})))
@@ -163,17 +165,18 @@
      :initial-results (initial-results->cells (+ queries-rows 2) queries-cols)
      :commands        (commands->cells steps (+ queries-rows 3))}))
 
-(defn- exception->str [e]
-  (let [message (or (.getMessage e) (str (.getClass e)))]
-    (if-let [form (-> e ex-data :form)]
-      (str message " - Form: " (prn-str form))
-      message)))
+(defn- exception->message [e]
+  (or (.getMessage e) (str (.getClass e))))
 
-(defn- check-exception! [actual expected coords]
+(defn- check-exception! [{:as wrapper ::keys [wrapped-exception]} expected coords]
+  
   (when (and (not= expected "X")
-             (-> actual .getMessage (not= expected)))
-    (.printStackTrace actual)
-    (check-cell! false (exception->str actual) coords)))
+             (-> wrapped-exception .getMessage (not= expected)))
+    (throw-info! (exception->message wrapped-exception)
+                 (-> wrapper
+                     (dissoc ::wrapped-exception)
+                     (assoc :actual-exception wrapped-exception)
+                     (merge coords)))))
 
 (defn- deep-flatten [v]
   (tree-seq coll? seq v))
@@ -182,34 +185,24 @@
   (check (not (string/blank? s)) "String cannot be blank")
   (-> s read-string clojure.walk/macroexpand-all))
 
-(defn- eval-info [form]
-  ; (println "================== Evaluating: " form)
-  (try
-    (eval form)
-    (catch Throwable e
-      (-> e
-          clojure.stacktrace/root-cause
-          exception->str
-          (ex-info {:form form})
-          throw))))
-
 (defn- eval-string [s]
-  (-> s compile-string eval-info))
+  (-> s compile-string eval))
 
-(defn- check-results! [actual expected coords]
-  (check-cell! (not (string/blank? expected)) "Expected result cannot be blank" coords)
-  (if (instance? Throwable actual)
-    (check-exception! actual expected coords)
-    (when-not (= expected "*")
-      (let [expected (if (= expected "X")
-                       "X"
-                       (try
-                         (eval-string expected)
-                         (catch Throwable e
-                           (check-cell! false (str "Error evaluating expected result:" (exception->str e)) coords))))]
-        (check-cell! (= actual expected)
-                     (str "Actual result was:\n" (if (some? actual) (prn-str actual) "nil"))
-                     (assoc coords :actual-value actual))))))
+(defn- check-result! [actual expected coords]
+  (let [expected (if (string/blank? expected) "\"<BLANK>\"" expected)]
+    (if (::wrapped-exception actual)
+      (check-exception! actual expected coords)
+      (when-not (= expected "*")
+        (let [expected (if (= expected "X")
+                         "X"
+                         (try
+                           (eval-string expected)
+                           (catch Throwable e
+                             (throw-info! (str "Error evaluating expected result:" (exception->message e))
+                                          coords))))]
+          (check-info! (= actual expected)
+                       (str "Actual result was:\n" (if (some? actual) (prn-str actual) "nil"))
+                       (assoc coords :actual-value actual)))))))
 
 (defn list-insert [lst elem index]
   (let [[l r] (split-at index lst)]
@@ -220,30 +213,39 @@
     form
     (list-insert form '_ 1)))
 
-(defn execute-query-segment [value segment]
-  (intern *ns* '_ value) ; Intern is a "def" that works at runtime (def creates the var at compile time). This indirection with this var is required because complex non-clojure objects such as #datascript/DB {...}, when added directy in the form, will give the error: "Can't embed object in code". Also it looks better in the print of the form than a huge state map.
-  (-> (str "(" segment ")")
-      compile-string
-      with-underline  ; The undeline symbol in the form refers to the var above.
-      eval-info))
-
 (defn- eval-user [user-string]
   (try
     (eval-string user-string)
     (catch Throwable t
-      (throw (RuntimeException. (str "Error reading user: " (exception->str t)))))))
+      (throw (RuntimeException. (str "Error reading user: " (exception->message t)))))))
+
+(def initial-query-line 3)
+(defn execute-query-segments
+  ([state segments]
+   (execute-query-segments state segments initial-query-line))
+  
+  ([value [segment & next-segments] query-line]
+   (if (string/blank? segment)
+     value
+     (try
+       (intern *ns* '_ value) ; Intern is a "def" that works at runtime (def creates the var at compile time). This indirection with this var is required because complex non-clojure objects such as #datascript/DB {...}, when added directy in the form, will give the error: "Can't embed object in code". Also it looks better in the print of the form than a huge state map.
+       (let [result (-> (str "(" segment ")")
+                        compile-string
+                        with-underline  ; The undeline symbol in the form refers to the var created with 'intern' above.
+                        eval)]
+         (execute-query-segments result next-segments (inc query-line)))
+       (catch Exception e
+         {::wrapped-exception e
+          :query-line query-line})))))
 
 (defn- safe-query-result [state user segments]
-  (try
-    (binding [*user* (eval-user user)]
-      (reduce execute-query-segment state (remove string/blank? segments)))
-    (catch Throwable e
-      e)))
+  (binding [*user* (eval-user user)]
+    (execute-query-segments state segments)))
 
 (defn- execute-query [state query-results-line query-column-number [user & segments] expected-result]
   (let [column (query-column-idx->column query-column-number)
         actual-result (safe-query-result state user segments)]
-    (check-results! actual-result expected-result {:column column, :line query-results-line})))
+    (check-result! actual-result expected-result {:column column, :line query-results-line})))
 
 (defn- check-queries! [state query-results-line queries results]
   (doseq [[idx [query result]] (->> results
@@ -252,19 +254,18 @@
     (execute-query state query-results-line idx query result)))
 
 (defn- check-command-result! [coords expected new-state]
-  (check-cell! (not (string/blank? expected)) "Command result cannot be blank" coords)
-  (check-cell! (some? new-state) "Command returned nil. Must return a state map." coords)
-  (check-cell! (map? new-state) (str "Command returned a " (.getClass new-state) ". Must return a state map.") coords)
+  (check-info! (some? new-state) "Command returned nil. Must return a state map." coords)
+  (check-info! (map? new-state) (str "Command returned a " (.getClass new-state) ". Must return a state map.") coords)
   (when-not (= expected "*")
-    (check-cell! (contains? new-state :result) (str "Command returned the state without a :result key.") coords))
+    (check-info! (contains? new-state :result) (str "Command returned the state without a :result key.") coords))
   (let [actual (:result new-state)]
-    (check-results! actual expected coords)))
+    (check-result! actual expected coords)))
 
 (defn- resolve-command-fn [function-str line]
   (try
     (eval-string function-str)
     (catch Exception e
-      (check-cell! false (str "Unable to resolve command '" function-str "' " (exception->str e))
+      (throw-info! (str "Unable to resolve command '" function-str "' " (exception->message e))
                    {:line line, :column "B"}))))
 
 (defn- execute-command [state {:keys [function user params result result-coords]}]
@@ -276,7 +277,7 @@
                     (binding [*user* (eval-user user)]
                       (command))
                     (catch Throwable e
-                      (assoc state :result e)))]
+                      (assoc state :result {::wrapped-exception e})))]
     (check-command-result! result-coords result new-state)
     (dissoc new-state :result)))
 
