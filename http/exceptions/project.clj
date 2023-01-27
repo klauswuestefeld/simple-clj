@@ -1,4 +1,4 @@
-(defproject house.jux/http.exceptions "2022.10.03"
+(defproject house.jux/http.exceptions "2023.01.27"
 
   :description "Wrapper that handles API thrown exceptions with a 400 status code"
   :url "https://github.com/klauswuestefeld/simple-clj/tree/master/http/exceptions"
