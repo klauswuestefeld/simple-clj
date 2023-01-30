@@ -212,7 +212,7 @@
 
   function applyStyle(spreadsheet) {
     const queryLines = new Set(spreadsheet.queries.map(cell => {
-      const lineNumber = Number(cell.replace(/^\D+/g, ''));
+      const lineNumber = Number(cell.replace(/^\D+/g, '')); // TODO: Inline this const
 
       return lineNumber;
     }));
