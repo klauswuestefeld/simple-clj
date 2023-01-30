@@ -55,7 +55,7 @@
     result))
 
 (defn- throw-info! [msg info]
-   (throw (ex-info msg (assoc info :spreadsheet *test-spreadsheet*))))
+  (throw (ex-info msg (assoc info :spreadsheet *test-spreadsheet*))))
 
 (defn- check-info! [condition otherwise-msg info]
   (when-not condition
@@ -148,7 +148,7 @@
          (mapcat (fn [col-num]
                    (let [col-letter (->column col-num)]
                      (map (fn [row-num]
-                            (str col-letter row-num)) 
+                            (str col-letter row-num))
                           (range initial-command-row (+ commands-rows initial-command-row)))))))))
 
 (defn- initial-results->cells [row cols]
@@ -169,7 +169,7 @@
   (or (.getMessage e) (str (.getClass e))))
 
 (defn- check-exception! [{:as wrapper ::keys [wrapped-exception]} expected coords]
-  
+
   (when (and (not= expected "X")
              (-> wrapped-exception .getMessage (not= expected)))
     (throw-info! (exception->message wrapped-exception)
@@ -202,7 +202,10 @@
                                           coords))))]
           (check-info! (= actual expected)
                        (str "Actual result was:\n" (if (some? actual) (prn-str actual) "nil"))
-                       (assoc coords :actual-value actual)))))))
+                       (assoc coords :actual-value (if (coll? actual)
+                                                     (-> actual pr-str doall)
+                                                     (str actual))
+                              :actual-value-type (-> actual type str))))))))
 
 (defn list-insert [lst elem index]
   (let [[l r] (split-at index lst)]
@@ -223,7 +226,7 @@
 (defn execute-query-segments
   ([state segments]
    (execute-query-segments state segments initial-query-line))
-  
+
   ([value [segment & next-segments] query-line]
    (if (string/blank? segment)
      value
@@ -271,8 +274,8 @@
 (defn- execute-command [state {:keys [function user params result result-coords]}]
   (let [command (resolve-command-fn function (:line result-coords))
         command (if (string/blank? params)
-                   #(command state)
-                   #(command state (eval-string params)))
+                  #(command state)
+                  #(command state (eval-string params)))
         new-state (try
                     (binding [*user* (eval-user user)]
                       (command))

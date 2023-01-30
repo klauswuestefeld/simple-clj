@@ -82,13 +82,19 @@
 
     #alert-container {
       padding: 12px;
-      height: 20px;
+      min-height: 20px;
+      max-height: 210px;
       display: flex;
       flex-flow: column;
     }
 
+    #alert-container button {
+      cursor: pointer;
+    }
+
     #alert-container p {
       margin: 0;
+      overflow: auto;
     }
 
     details>*:not(summary) {
@@ -144,6 +150,36 @@
       margin: 0;
       display: inline;
       color: #737373
+    }
+
+    spread-modal {
+      display: block;
+      position: absolute;
+      top: 40%;
+      left: 40%;
+      background-color: #f5f5f5;
+      padding: 16px;
+      border-radius: 4px;
+    }
+
+    spread-modal .close-modal {
+      position: absolute;
+      top: 10px;
+      left: 96%;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    spread-modal .title {
+      font-weight: bold;
+    }
+
+    spread-modal .content {
+      overflow: auto;
+      max-height: 200px;
+      max-width: 600px;
+      background: #fff;
+      padding: 4px;
     }
   </style>
 </head>
@@ -320,8 +356,10 @@
     displayTestStatusAlert(msg, "#FF0000");
   }
 
-  function useItButton(cell, actualValue) {
-    if (typeof actualValue === "string") actualValue = `"${actualValue}"`;
+  function useItButton(cell, actualValue, actualValueType) {
+    const type = actualValueType.toLowerCase();
+    if (type.includes("string")) actualValue = `"${actualValue}"`;
+    if (type.includes("lazyseq")) actualValue = `'${actualValue}`;
     const result = document.createElement("button");
     result.textContent = "Use It!";
     result.addEventListener("click", () => jspreadsheetObj.setValue(cell, actualValue));
@@ -329,9 +367,61 @@
     return result;
   }
 
-  function displayUseItButton(cell, actualValue) {
+  function modal(titleString, contentString) {
+    const result = document.createElement("spread-modal");
+
+    const close = document.createElement("span");
+    close.textContent = "X";
+    close.className = "close-modal";
+    close.addEventListener("click", (_ev) => result.remove());
+
+    const title = document.createElement("p");
+    title.textContent = titleString;
+    title.className = "title";
+
+    const content = document.createElement("p");
+    content.textContent = contentString;
+    content.className = "content";
+
+    result.append(close, title, content);
+
+    const closeListener = window.addEventListener("click", (ev) => {
+      if (result.contains(ev.target)) return;
+      result.remove();
+      window.removeEventListener("click", closeListener);
+    });
+
+    return result;
+  }
+
+  function stacktraceButton(stacktrace) {
+    const result = document.createElement("button");
+    result.textContent = "Show Stacktrace";
+    result.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      document.querySelector("spread-modal")?.remove();
+      document.body.appendChild(modal("Stacktrace", stacktrace));
+    });
+
+    return result;
+  }
+
+  function displayButton(button) {
     const container = document.querySelector("#alert-container");
-    container.appendChild(useItButton(cell, actualValue));
+    container.appendChild(button);
+  }
+
+  function displayStackTraceButton(stacktrace) {
+    displayButton(stacktraceButton(stacktrace));
+  }
+
+  function displayUseItButton(cell, actualValue, actualValueType) {
+    displayButton(useItButton(cell, actualValue, actualValueType));
+  }
+
+  function highlightCellWithError(cellString) {
+    const cellDOMElement = jspreadsheetObj.getCell(cellString);
+    cellDOMElement.classList.add("cell-with-error");
   }
 
   async function handleTestResponse(response) {
@@ -340,20 +430,24 @@
     } else {
       const body = await response.json();
       if (body["ex-data"] && body["ex-data"].column) {
-        if (body["ex-data"].stacktrace)
-          console.log(body["ex-data"].stacktrace);
-          
         const cell = body["ex-data"].column + body["ex-data"].line;
 
         const spreadsheetElement = document.getElementById(body["ex-data"].spreadsheet);
         await handleTestSelection(spreadsheetElement);
 
-        const cellDOMElement = jspreadsheetObj.getCell(cell);
-        cellDOMElement.classList.add("cell-with-error");
+        highlightCellWithError(cell);
+
+        if (body["ex-data"]["query-line"]) {
+          const cell = body["ex-data"].column + body["ex-data"]["query-line"];
+          highlightCellWithError(cell);
+        }
 
         displayTestError(body.message);
+
         if (body["ex-data"]["actual-value"]) {
-          displayUseItButton(cell, body["ex-data"]["actual-value"]);
+          displayUseItButton(cell, body["ex-data"]["actual-value"], body["ex-data"]["actual-value-type"]);
+        } else if (body["ex-data"].stacktrace) {
+          displayStackTraceButton(body["ex-data"].stacktrace);
         }
       } else if (body["ex-data"] && body["ex-data"].stacktrace) {
         displayTestError("Exception\n\n" + body["ex-data"].stacktrace);
