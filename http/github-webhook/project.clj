@@ -1,4 +1,4 @@
-(defproject house.jux/http.github-webhook "0.0.1"
+(defproject house.jux/http.github-webhook "0.0.2"
 
   :description "Github webhook for redeploy."
   :url "https://github.com/klauswuestefeld/simple-clj/tree/master/http/github-webhook"
@@ -11,6 +11,6 @@
                  ["maven.compiler.target" "17"]]
 
   :dependencies [[org.clojure/clojure "1.11.1"]
-                 [cheshire "5.8.0"]]
+                 [cheshire "5.11.0"]]
 
   :repositories [["clojars" {:sign-releases false}]])
