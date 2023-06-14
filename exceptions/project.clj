@@ -1,4 +1,4 @@
-(defproject house.jux/exceptions "0.0.1"
+(defproject house.jux/exceptions "2023.06.13"
 
   :description "Exception utilities"
   :url "https://github.com/klauswuestefeld/simple-clj/tree/master/exceptions"
