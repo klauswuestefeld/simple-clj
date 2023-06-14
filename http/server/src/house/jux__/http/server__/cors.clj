@@ -30,17 +30,20 @@
             (->> headers keys (remove default-headers) (join ", ")))
     response))
 
-(defn- allow-origins [req delegate allowed-origins]
+(defn- allow-origins [req delegate allowed-prefixes]
   (let [req-hdrs (req :headers)
         origin   (req-hdrs "origin")
-        allowed? (some #(.startsWith origin %) allowed-origins)]
+        allowed? (and origin
+                      (some #(.startsWith origin %) allowed-prefixes))]
     (if allowed?
       (with-cors-headers origin
         (if (contains? req-hdrs "access-control-request-method")
           {:status 204
            :headers (->preflight req-hdrs)}
           (expose-headers (delegate req))))
-      {:status 403})))
+      (do
+        (println "CORS not allowed. Origin:" origin)
+        {:status 403}))))
 
-(defn wrap-cors [delegate allowed-origins]
-  (fn [req] (allow-origins req delegate allowed-origins)))
+(defn wrap-cors [delegate allowed-prefixes]
+  (fn [req] (allow-origins req delegate allowed-prefixes)))

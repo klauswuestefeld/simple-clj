@@ -1,4 +1,4 @@
-(defproject house.jux/http.server "2023.06.13"
+(defproject house.jux/http.server "2023.06.14.16.29"
 
   :description "Server with some request handling functionalities."
   :url "https://github.com/klauswuestefeld/simple-clj/tree/master/http/server"

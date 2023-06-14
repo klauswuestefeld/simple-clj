@@ -1,5 +1,6 @@
 (ns house.jux--.http.server--.exceptions
   (:require [cheshire.core :as json]
+            [clojure.pprint :refer [pprint]]
             [house.jux--.exceptions-- :refer [treated-message]]))
 
 (defn- message [e]
@@ -18,7 +19,8 @@
                       message)]
         (if treated?
           (println message (:uri request))
-          (do (println "Exception handling" (:uri request))
+          (do (println "Exception handling request:" (:uri request))
+              (pprint request)
               (.printStackTrace e)))
         {:status 400
          :body   (json/generate-string {:error message})}))))

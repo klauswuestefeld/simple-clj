@@ -15,12 +15,12 @@
   (cond-> delegate
     keyword-params? wrap-keyword-params))
 
-(defn- start-http-server! [{:keys [handler service-name cors-regexes port keyword-params?]}]
+(defn- start-http-server! [{:keys [handler service-name cors-prefixes port keyword-params?]}]
   (-> handler
       (wrap-keyword-params-if-necessary keyword-params?)
+      (wrap-cors cors-prefixes)
       (wrap-redeploy! service-name #(.stop @server))
       (wrap-exceptions)
-      (wrap-cors cors-regexes)
       (wrap-pprint)
       (wrap-params)
       (run-jetty {:host "127.0.0.1" ; Accept only local requests, such as reverse proxy (Ex: Caddy)
