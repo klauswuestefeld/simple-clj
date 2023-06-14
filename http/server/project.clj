@@ -14,6 +14,6 @@
                  [jumblerg/ring-cors "3.0.0"]
                  [ring/ring-jetty-adapter "1.10.0"]
                  [cheshire "5.11.0"]
-                 [house.jux/exceptions "0.0.1"]]
+                 [house.jux/exceptions "2023.06.13"]]
 
   :repositories [["clojars" {:sign-releases false}]])
