@@ -11,11 +11,11 @@
 
 (def server (atom nil))
 
-(defn- wrap-keyword-params-if-necessary [delegate keyword-params?]
+#_(defn- wrap-keyword-params-if-necessary [delegate keyword-params?]
   (cond-> delegate
     keyword-params? wrap-keyword-params))
 
-(defn- start-http-server! [{:keys [handler service-name cors-prefixes port keyword-params?]}]
+#_(defn- start-http-server! [{:keys [handler service-name cors-prefixes port keyword-params?]}]
   (-> handler
       (wrap-keyword-params-if-necessary keyword-params?)
       (wrap-cors cors-prefixes)
@@ -27,8 +27,11 @@
                   :port (if port (Integer. ^String port) 8080)
                   :join? false})))
 
-(defn start! [options]
-  (-> "UTC" TimeZone/getTimeZone TimeZone/setDefault)
-  (System/setProperty "file.encoding" "UTF-8")
+(defn- start-http-server! [handler]
+  (wrap-pprint handler))
 
-  (reset! server (start-http-server! options)))
+(defn start! [options]
+  #_(-> "UTC" TimeZone/getTimeZone TimeZone/setDefault)
+  #_(System/setProperty "file.encoding" "UTF-8")
+    (start-http-server! options)
+  #_(reset! server (start-http-server! options)))
