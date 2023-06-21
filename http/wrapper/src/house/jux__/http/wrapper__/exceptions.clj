@@ -1,4 +1,4 @@
-(ns house.jux--.http.server--.exceptions
+(ns house.jux--.http.wrapper--.exceptions
   (:require [cheshire.core :as json]
             [clojure.pprint :refer [pprint]]
             [house.jux--.exceptions-- :refer [treated-message]]))

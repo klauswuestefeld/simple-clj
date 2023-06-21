@@ -1,4 +1,4 @@
-(ns house.jux--.http.server--.cors
+(ns house.jux--.http.wrapper--.cors
   (:require [clojure.string :refer [join]]))
 
 (def default-headers

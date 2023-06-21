@@ -1,4 +1,4 @@
-(defproject house.jux/http.server "2023.06.21"
+(defproject house.jux/http.wrapper "2023.06.21"
 
   :description "Server with some request handling functionalities."
   :url "https://github.com/klauswuestefeld/simple-clj/tree/master/http/server"
@@ -11,7 +11,7 @@
                  ["maven.compiler.target" "17"]]
 
   :dependencies [[org.clojure/clojure "1.11.1"]
-                 [house.jux/http.wrapper "2023.06.21"]
-                 [ring/ring-jetty-adapter "1.10.0"]]
+                 [cheshire "5.11.0"]
+                 [house.jux/exceptions "2023.06.13"]]
 
   :repositories [["clojars" {:sign-releases false}]])

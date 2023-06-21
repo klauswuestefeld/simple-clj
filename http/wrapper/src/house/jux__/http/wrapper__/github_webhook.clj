@@ -1,4 +1,4 @@
-(ns house.jux--.http.server--.github-webhook
+(ns house.jux--.http.wrapper--.github-webhook
   (:require
    [cheshire.core :as json]
    [clojure.java.shell :as shell]))

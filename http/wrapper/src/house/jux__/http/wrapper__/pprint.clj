@@ -1,4 +1,4 @@
-(ns house.jux--.http.server--.pprint
+(ns house.jux--.http.wrapper--.pprint
   (:require
     [clojure.pprint :refer [pprint]]))
 
