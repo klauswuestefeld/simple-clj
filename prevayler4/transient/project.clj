@@ -10,6 +10,4 @@
                  [prevayler-clj/prevayler4 "2020.11.14"]]
   
   :profiles {:dev {:dependencies [[midje "1.9.9"]]
-                   :plugins [[lein-midje "3.1.3"]]}}
-  
-  :repositories [["clojars" {:sign-releases false}]])
+                   :plugins [[lein-midje "3.1.3"]]}})
