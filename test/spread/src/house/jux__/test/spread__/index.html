@@ -368,13 +368,13 @@
     displayTestStatusAlert(msg, "#FF0000");
   }
 
-  function useItButton(cell, actualValue, actualValueType) {
-    const type = actualValueType.toLowerCase();
-    if (type.includes("string")) actualValue = `"${actualValue}"`;
-    if (type.includes("lazyseq")) actualValue = `'${actualValue}`;
+  function useItButton(cell, actualValue) {
     const result = document.createElement("button");
     result.textContent = "Use It!";
-    result.addEventListener("click", () => jspreadsheetObj.setValue(cell, actualValue));
+    result.addEventListener("click", () => {
+      console.log("Actual", actualValue);
+      jspreadsheetObj.setValue(cell, actualValue)
+    });
 
     return result;
   }
@@ -443,8 +443,8 @@
     displayButton(stacktraceButton(stacktrace));
   }
 
-  function displayUseItButton(cell, actualValue, actualValueType) {
-    displayButton(useItButton(cell, actualValue, actualValueType));
+  function displayUseItButton(cell, actualValue) {
+    displayButton(useItButton(cell, actualValue));
   }
 
   function highlightCellWithError(cellString) {
@@ -473,7 +473,7 @@
         displayTestError(body.message);
 
         if (body["ex-data"]["actual-value"]) {
-          displayUseItButton(cell, body["ex-data"]["actual-value"], body["ex-data"]["actual-value-type"]);
+          displayUseItButton(cell, body["ex-data"]["actual-value"]);
         } else if (body["ex-data"].stacktrace) {
           displayStackTraceButton(body["ex-data"].stacktrace);
         }

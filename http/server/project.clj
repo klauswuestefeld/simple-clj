@@ -12,6 +12,8 @@
 
   :dependencies [[org.clojure/clojure "1.11.1"]
                  [house.jux/http.wrapper "2023.06.21"]
-                 [ring/ring-jetty-adapter "1.10.0"]]
-
-  :repositories [["clojars" {:sign-releases false}]])
+                 [ring/ring-jetty-adapter "1.10.0"]
+                 [jumblerg/ring-cors "3.0.0"]
+                 [ring/ring-jetty-adapter "1.10.0"]
+                 [cheshire "5.11.0"]
+                 [house.jux/exceptions "2023.06.13"]])

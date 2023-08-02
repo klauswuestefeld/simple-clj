@@ -188,24 +188,28 @@
 (defn- eval-string [s]
   (-> s compile-string eval))
 
+(defn- prn-safe-for-eval [v]
+  (->> v
+       (clojure.walk/postwalk #(if (seq? %) (vec %) %))
+       prn-str))
+
 (defn- check-result! [actual expected coords]
   (let [expected (if (string/blank? expected) "\"<BLANK>\"" expected)]
     (if (::wrapped-exception actual)
       (check-exception! actual expected coords)
       (when-not (= expected "*")
-        (let [expected (if (= expected "X")
+        (let [ex-data (assoc coords :omit-stacktrace true)
+              expected (if (= expected "X")
                          "X"
                          (try
                            (eval-string expected)
                            (catch Throwable e
-                             (throw-info! (str "Error evaluating expected result:" (exception->message e))
-                                          coords))))]
-          (check-info! (= actual expected)
-                       (str "Actual result was:\n" (if (some? actual) (prn-str actual) "nil"))
-                       (assoc coords :actual-value (if (coll? actual)
-                                                     (-> actual pr-str doall)
-                                                     (str actual))
-                              :actual-value-type (-> actual type str))))))))
+                             (throw-info! (str "Error evaluating cell:\n" (exception->message e))
+                                          ex-data))))]
+          (when-not (= actual expected)
+            (let [safe-actual (prn-safe-for-eval actual)]
+              (throw-info! (str "Actual result was:\n" safe-actual)
+                           (assoc ex-data :actual-value safe-actual)))))))))
 
 (defn list-insert [lst elem index]
   (let [[l r] (split-at index lst)]

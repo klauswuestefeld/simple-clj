@@ -25,10 +25,10 @@
 (defn- unpack-actual-exception-if-necessary [exception]
   (let [actual (or (-> exception ex-data :actual-exception)
                    exception)
-        data (-> exception
-                 ex-data
-                 (dissoc :actual-exception)
-                 (assoc :stacktrace (with-out-str (stacktrace/print-cause-trace actual))))
+        data (-> exception ex-data (dissoc :actual-exception))
+        data (if (:omit-stacktrace data)
+               data
+               (assoc data :stacktrace (with-out-str (stacktrace/print-cause-trace actual))))
         msg (or (.getMessage actual) (str (.getClass actual)))]
     (ex-info msg data actual)))
 
