@@ -340,9 +340,10 @@
     const container = document.querySelector("#alert-container");
     Array.from(container.children)?.forEach(child => child.remove());
 
-    const alert = document.createElement("p");
+    const alert = document.createElement("pre");
     alert.textContent = message;
-
+    
+    alert.style.whiteSpace = 'pre-wrap';
     if (textColor) alert.style.color = textColor;
 
     container.appendChild(alert);
