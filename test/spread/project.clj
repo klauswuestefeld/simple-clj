@@ -1,4 +1,4 @@
-(defproject house.jux/test.spread "2023.02.03"
+(defproject house.jux/test.spread "2023.08.02"
 
   :description "Support for highly expressive, two-dimensional tests represented as spreadsheets."
   :url "https://github.com/klauswuestefeld/simple-clj/tree/master/test/spread"
@@ -20,6 +20,4 @@
                  [house.jux/http.pprint "2022.10.03"]
                  [simple/check "2.0.0"]]
 
-  :repositories [["clojars" {:sign-releases false}]]
-  
   :test-paths ["test"])
