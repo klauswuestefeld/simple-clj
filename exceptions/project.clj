@@ -10,6 +10,4 @@
 
   :pom-addition [:properties
                  ["maven.compiler.source" "17"]
-                 ["maven.compiler.target" "17"]]
-
-   :repositories [["clojars" {:sign-releases false}]])
+                 ["maven.compiler.target" "17"]])
