@@ -10,6 +10,4 @@
                  ["maven.compiler.source" "11"]
                  ["maven.compiler.target" "11"]]
 
-  :dependencies [[org.clojure/clojure "1.11.1"]]
-
-  :repositories [["clojars" {:sign-releases false}]])
+  :dependencies [[org.clojure/clojure "1.11.1"]])

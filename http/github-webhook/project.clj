@@ -11,6 +11,4 @@
                  ["maven.compiler.target" "17"]]
 
   :dependencies [[org.clojure/clojure "1.11.1"]
-                 [cheshire "5.11.0"]]
-
-  :repositories [["clojars" {:sign-releases false}]])
+                 [cheshire "5.11.0"]])

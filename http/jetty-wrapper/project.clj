@@ -11,6 +11,4 @@
                  ["maven.compiler.target" "17"]]
 
   :dependencies [[org.clojure/clojure "1.11.1"]
-                 [ring/ring-jetty-adapter "1.10.0"]]
-
-  :repositories [["clojars" {:sign-releases false}]])
+                 [ring/ring-jetty-adapter "1.10.0"]])

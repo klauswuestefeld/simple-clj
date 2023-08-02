@@ -12,6 +12,4 @@
 
   :dependencies [[org.clojure/clojure "1.11.1"]
                  [cheshire "5.11.0"]
-                 [house.jux/exceptions "2023.06.13"]]
-
-  :repositories [["clojars" {:sign-releases false}]])
+                 [house.jux/exceptions "2023.06.13"]])
