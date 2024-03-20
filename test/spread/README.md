@@ -1,3 +1,3 @@
 # Spreadtest
 
-A framework for absurdly expressive tests represented as spreadsheets.
+A framework for absurdly expressive, two-dimentional tests represented as spreadsheets.
