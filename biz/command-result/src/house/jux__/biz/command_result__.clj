@@ -1,7 +1,8 @@
 (ns house.jux--.biz.command-result--
   (:require [simple.check2 :refer [check]]))
 
-(def ^:dynamic *result-atom* nil)
+#_{:clj-kondo/ignore [:uninitialized-var]}
+(def ^:dynamic *result-atom*)
 
 (defn new-result-atom []
   (atom ::no-result))
