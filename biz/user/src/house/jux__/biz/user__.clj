@@ -1,5 +1,6 @@
 (ns house.jux--.biz.user--)
 
+#_{:clj-kondo/ignore [:uninitialized-var]}
 (def ^:dynamic *user*)
 
 (defn user []
