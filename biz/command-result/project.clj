@@ -1,4 +1,4 @@
-(defproject house.jux/biz.command-result "2024.04.26-SNAPSHOT"
+(defproject house.jux/biz.command-result "2024.04.26"
 
   :description "Support for commands to return a result without polluting the state (uses a dynamic var)."
   :url "https://github.com/klauswuestefeld/simple-clj/tree/master/biz/command-result"
