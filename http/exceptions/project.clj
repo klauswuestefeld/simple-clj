@@ -1,4 +1,4 @@
-(defproject house.jux/http.exceptions "2023.01.27"
+(defproject house.jux/http.exceptions "2024.05.28-SNAPSHOT"
 
   :description "Wrapper that handles API thrown exceptions with a 400 status code"
   :url "https://github.com/klauswuestefeld/simple-clj/tree/master/http/exceptions"
@@ -11,4 +11,5 @@
                  ["maven.compiler.target" "11"]]
 
   :dependencies [[org.clojure/clojure "1.11.1"]
-                 [cheshire "5.8.0"]])
+                 [cheshire "5.8.0"]
+                 [house.jux/exceptions "2024.05.28-SNAPSHOT"]])
