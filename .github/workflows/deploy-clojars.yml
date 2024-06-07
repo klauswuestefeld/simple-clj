@@ -1,0 +1,56 @@
+name: Deploy to Clojars
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up JDK
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'temurin'
+        java-version: '11'
+
+    - name: Install Leiningen
+      run: |
+        curl https://raw.githubusercontent.com/technomancy/leiningen/stable/bin/lein > lein
+        chmod a+x lein
+        sudo mv lein /usr/local/bin/
+
+    - name: Check for changes and SNAPSHOT
+      id: check_changes
+      run: |
+        changed_libs=()
+        for dir in $(find . -name 'project.clj' -exec dirname {} \;); do
+          if git diff --quiet HEAD~1 HEAD -- $dir; then
+            echo "No changes in $dir"
+          else
+            if grep -q SNAPSHOT $dir/project.clj; then
+              echo "SNAPSHOT version in $dir, skipping deployment"
+            else
+              echo "Deploying $dir"
+              changed_libs+=($dir)
+            fi
+          fi
+        done
+        echo "changed_libs=${changed_libs[@]}" >> $GITHUB_ENV
+
+    - name: Deploy changed libs
+      if: env.changed_libs != ""
+      run: |
+        IFS=' ' read -r -a libs <<< "$changed_libs"
+        for lib in "${libs[@]}"; do
+          cd $lib
+          lein deploy clojars
+          cd ..
+      env:
+        CLOJARS_USERNAME: ${{ secrets.CLOJARS_USERNAME }}
+        CLOJARS_PASSWORD: ${{ secrets.CLOJARS_PASSWORD }}
