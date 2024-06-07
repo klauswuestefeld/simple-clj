@@ -1,4 +1,4 @@
-(defproject house.jux/http.pprint "2022.10.03"
+(defproject house.jux/http.pprint "2024.05.28-SNAPSHOT"
 
   :description "Wrapper that prints summaries of incoming requests"
   :url "https://github.com/klauswuestefeld/simple-clj/tree/master/http/pprint"
