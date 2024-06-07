@@ -8,6 +8,8 @@
   
   :dependencies [[org.clojure/clojure "1.11.1"]]
   :deploy-repositories [["clojars" {:url "https://clojars.org/repo"
+                                    :username :env/CLOJARS_USERNAME
+                                    :password :env/CLOJARS_PASSWORD
                                     :sign-releases false}]]
   :pom-addition [:properties
                  ["maven.compiler.source" "17"]
