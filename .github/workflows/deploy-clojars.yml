@@ -36,7 +36,7 @@ jobs:
             if grep -q SNAPSHOT $dir/project.clj; then
               echo "SNAPSHOT version in $dir, skipping deployment"
             else
-              echo "Deploying $dir"
+              echo "Changes detected in $dir and no SNAPSHOT version"
               changed_libs+=($dir)
             fi
           fi
@@ -44,9 +44,9 @@ jobs:
         echo "changed_libs=${changed_libs[@]}" >> $GITHUB_ENV
 
     - name: Deploy changed libs
-      if: env.changed_libs != ""
+      if: ${{ env.changed_libs != '' }}
       run: |
-        IFS=' ' read -r -a libs <<< "$changed_libs"
+        IFS=' ' read -r -a libs <<< "${{ env.changed_libs }}"
         for lib in "${libs[@]}"; do
           cd $lib
           lein deploy clojars
