@@ -1,5 +1,6 @@
 (defproject house.jux/exceptions "2024.06.08"
 
+  
   :description "Exception utilities"
   :url "https://github.com/klauswuestefeld/simple-clj/tree/master/exceptions"
 
