@@ -7,7 +7,8 @@
             :url "https://github.com/klauswuestefeld/simple-clj/blob/master/LICENSE"}
   
   :dependencies [[org.clojure/clojure "1.11.1"]]
-
+  :deploy-repositories [["clojars" {:url "https://clojars.org/repo"
+                                    :sign-releases false}]]
   :pom-addition [:properties
                  ["maven.compiler.source" "17"]
                  ["maven.compiler.target" "17"]])
