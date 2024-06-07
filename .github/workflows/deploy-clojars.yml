@@ -48,9 +48,11 @@ jobs:
       run: |
         IFS=' ' read -r -a libs <<< "${{ env.changed_libs }}"
         for lib in "${libs[@]}"; do
+          echo "Deploying $lib"
           cd $lib
           lein deploy clojars
           cd ..
+        done
       env:
         CLOJARS_USERNAME: ${{ secrets.CLOJARS_USERNAME }}
         CLOJARS_PASSWORD: ${{ secrets.CLOJARS_PASSWORD }}
