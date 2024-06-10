@@ -1,6 +1,6 @@
 (defproject house.jux/http.exceptions "2024.06.11"
 
-  :description "Wrapper that handles API thrown exceptions with a 400 status code"
+  :description "Wrapper that handles API thrown exceptions with a 400 status code."
   :url "https://github.com/klauswuestefeld/simple-clj/tree/master/http/exceptions"
 
   :license {:name "BSD 3-Clause"
