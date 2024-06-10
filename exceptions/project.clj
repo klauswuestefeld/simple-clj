@@ -4,7 +4,7 @@
   :description "Exception utilities"
   :url "https://github.com/klauswuestefeld/simple-clj/tree/master/exceptions"
 
-  :parent ["../_parent-project" "2024.06.07"]
+  :parent [parent-project "2024.06.07" :relative-path "../_parent-project"]
 
   :license {:name "BSD 3-Clause"
             :url "https://github.com/klauswuestefeld/simple-clj/blob/master/LICENSE"}
