@@ -1,4 +1,4 @@
-(defproject house.jux/parent-project "2024.06.07"
+(defproject house.jux/parent-project "2024.06.08"
   :description "Parent project for shared configuration"
 
   :dependencies [[org.clojure/clojure "1.11.3"]]
