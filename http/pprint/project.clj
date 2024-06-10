@@ -1,6 +1,6 @@
 (defproject house.jux/http.pprint "2024.06.10"
 
-  :description "Wrapper that prints summaries of incoming requests"
+  :description "Wrapper that prints summaries of incoming requests."
   :url "https://github.com/klauswuestefeld/simple-clj/tree/master/http/pprint"
 
   :license {:name "BSD 3-Clause"
