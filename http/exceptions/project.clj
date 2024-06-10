@@ -1,4 +1,4 @@
-(defproject house.jux/http.exceptions "2024.06.09"
+(defproject house.jux/http.exceptions "2024.06.10"
 
   :description "Wrapper that handles API thrown exceptions with a 400 status code"
   :url "https://github.com/klauswuestefeld/simple-clj/tree/master/http/exceptions"
@@ -7,5 +7,4 @@
   :parent-project {:coords  [house.jux/parent-project "2024.06.09"]
                    :inherit [:deploy-repositories :dependencies :license]}
 
-  :dependencies [[cheshire "5.8.0"]
-                 [house.jux/exceptions "2024.06.09"]])
+  :dependencies [[house.jux/exceptions "2024.06.09"]])

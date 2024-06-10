@@ -1,14 +1,12 @@
 (ns house.jux--.http.exceptions--
   (:require
-   [cheshire.core :as json]
    [clojure.stacktrace :as stacktrace]
    [house.jux--.exceptions-- :refer [message expected?]]))
 
 (defn- ->body [e message expected?]
-  (json/generate-string
-   (if expected?
-     {:error message, :expected true}
-     {:error message, :stacktrace (with-out-str (stacktrace/print-cause-trace e))})))
+  (if expected?
+    {:error message, :expected true}
+    {:error message, :stacktrace (with-out-str (stacktrace/print-cause-trace e))}))
 
 
 (defn handle [delegate-handler request]
