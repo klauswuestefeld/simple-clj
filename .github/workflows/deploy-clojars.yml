@@ -31,7 +31,7 @@ jobs:
       id: check_changes
       run: |
         changed_libs=()
-        for dir in $(find . -name 'project.clj' -not -path "./parent-project/*" -exec dirname {} \;); do
+        for dir in $(find . -name 'project.clj' -exec dirname {} \;); do
           if git diff --quiet HEAD~1 HEAD -- $dir; then
             echo "No changes in $dir"
           else
