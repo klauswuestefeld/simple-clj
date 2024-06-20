@@ -11,7 +11,10 @@
 #_{:clj-kondo/ignore [:clojure-lsp/unused-public-var]}
 (defn get-result []
   (let [result @*result*]
-    (if (= result ::no-result) nil result)))
+    (cond
+      (= result ::no-result) nil
+      (fn? result) (result)
+      :else result)))
 
 #_{:clj-kondo/ignore [:clojure-lsp/unused-public-var]}
 (defn set-result [v]
