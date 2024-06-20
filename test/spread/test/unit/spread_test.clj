@@ -4,7 +4,7 @@
 
 (def parsed-csv
   (subject/parse-csv "test/spread/fixture.biz/create-new-profile.csv"))
-;; TODO: fix the following test
+
 (deftest building-test-map
   (is (= {:title "A user can create a new profile",
           :queries

@@ -8,5 +8,5 @@ A user can create a new profile,,,,,,,,,,,
 tester,create-new-profile,"{:name ""Bob""
  :phone 444
  :age 40}",*,"""Bob""",444,40,tester,,,[:age :created-by],[[:age :created-by]]
-tester,update-profile,{:phone 555},*,,555,,,tester,tester,,
+tester,update-profile,{:phone 555},"""Profile Updated""",,555,,,tester,tester,,
 tester,update-profile,"{:name ""BOOM""}",Invalid name,,,,,,,,
