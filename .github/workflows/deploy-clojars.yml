@@ -53,7 +53,7 @@ jobs:
           echo "Deploying $lib"
           cd $lib
           lein deploy clojars
-          cd ..
+          cd -
         done
       env:
         CLOJARS_USERNAME: ${{ secrets.CLOJARS_USERNAME }}
