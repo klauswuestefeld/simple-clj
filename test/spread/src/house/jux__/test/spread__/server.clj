@@ -3,6 +3,7 @@
             [house.jux--.http.api-- :as api]
             [house.jux--.http.exceptions-- :refer [wrap-exceptions]]
             [house.jux--.http.pprint-- :refer [wrap-pprint]]
+            [house.jux--.http.json-codec-- :as json-codec]
             [clojure.java.io :as java.io]
             [clojure.stacktrace :as stacktrace]
             [clojure.string :as string]
@@ -115,12 +116,13 @@
   (some-> @server (.stop))
   (reset! server
           (-> not-found
-              (wrap-index-html)
               (api/wrap-api "/api/run" run-tests {:anonymous? true})
               (api/wrap-api "/api/save-and-run" save-and-run {:anonymous? true})
               (api/wrap-api "/api/csv-read"  csv-read {:anonymous? true})
               (api/wrap-api "/api/get-test-tree" test-tree {:anonymous? true})
               (wrap-exceptions)
+              (json-codec/wrap)
+              (wrap-index-html)
               (wrap-pprint)
               (wrap-keyword-params)
               (wrap-params)
