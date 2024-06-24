@@ -1,4 +1,4 @@
-(defproject house.jux/test.spread "2024.06.20"
+(defproject house.jux/test.spread "2024.06.24"
 
   :description "Support for highly expressive, two-dimensional tests represented as spreadsheets."
   :url "https://github.com/klauswuestefeld/simple-clj/tree/master/test/spread"
@@ -10,8 +10,9 @@
                  [ring/ring-core "1.6.2"]
                  [ring/ring-jetty-adapter "1.6.2"]
                  [house.jux/biz.user "2024.06.10"]
+                 [house.jux/exceptions "2024.06.10"]
                  [house.jux/http.api "2024.06.11"]
-                 [house.jux/http.exceptions "2024.06.11"]
+                 [house.jux/http.exceptions "2024.06.24"]
                  [house.jux/http.pprint "2024.06.10"]
                  [house.jux/http.json-codec "2024.06.20"]
                  [simple/check "2024.06.10"]]

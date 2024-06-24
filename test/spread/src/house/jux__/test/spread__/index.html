@@ -456,31 +456,31 @@
     if (response.ok) {
       displayTestsPassed();
     } else {
-      const body = await response.json();
-      if (body["ex-data"] && body["ex-data"].column) {
-        const cell = body["ex-data"].column + body["ex-data"].line;
+      const exception = await response.json();
+      if (exception.column) {
+        const cell = exception.column + exception.line;
 
-        const spreadsheetElement = document.getElementById(body["ex-data"].spreadsheet);
+        const spreadsheetElement = document.getElementById(exception.spreadsheet);
         await handleTestSelection(spreadsheetElement);
 
         highlightCellWithError(cell);
 
-        if (body["ex-data"]["query-line"]) {
-          const cell = body["ex-data"].column + body["ex-data"]["query-line"];
+        if (exception["query-line"]) {
+          const cell = exception.column + exception["query-line"];
           highlightCellWithError(cell);
         }
 
-        displayTestError(body.message);
+        displayTestError(exception.error);
 
-        if (body["ex-data"]["actual-value"]) {
-          displayUseItButton(cell, body["ex-data"]["actual-value"]);
-        } else if (body["ex-data"].stacktrace) {
-          displayStackTraceButton(body["ex-data"].stacktrace);
+        if (exception["actual-value"]) {
+          displayUseItButton(cell, exception["actual-value"]);
+        } else if (exception.stacktrace) {
+          displayStackTraceButton(exception.stacktrace);
         }
-      } else if (body["ex-data"] && body["ex-data"].stacktrace) {
-        displayTestError("Exception\n\n" + body["ex-data"].stacktrace);
+      } else if (exception.stacktrace) {
+        displayTestError("Exception\n\n" + exception.stacktrace);
       } else {
-        displayTestError(body.message);
+        displayTestError(exception.error);
       }
     }
   }

@@ -1,5 +1,6 @@
 (ns house.jux--.test.spread--.server
   (:require [ring.adapter.jetty :refer [run-jetty]]
+            [house.jux--.exceptions-- :as exceptions]
             [house.jux--.http.api-- :as api]
             [house.jux--.http.exceptions-- :refer [wrap-exceptions]]
             [house.jux--.http.pprint-- :refer [wrap-pprint]]
@@ -27,11 +28,10 @@
   (let [actual (or (-> exception ex-data :actual-exception)
                    exception)
         data (-> exception ex-data (dissoc :actual-exception))
-        data (if (:omit-stacktrace data)
-               data
-               (assoc data :stacktrace (with-out-str (stacktrace/print-cause-trace actual))))
         msg (or (.getMessage actual) (str (.getClass actual)))]
-    (ex-info msg data actual)))
+    (if (:omit-stacktrace data)
+      (exceptions/expected msg data)
+      (ex-info msg data actual))))
 
 (defn- run-tests [_endpoint _user _]
   (try
