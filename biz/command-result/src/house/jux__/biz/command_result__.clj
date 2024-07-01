@@ -1,5 +1,4 @@
-(ns house.jux--.biz.command-result--
-  (:require [simple.check2 :refer [check]]))
+(ns house.jux--.biz.command-result--)
 
 #_{:clj-kondo/ignore [:uninitialized-var]}
 (def ^:dynamic *result*)
@@ -18,6 +17,5 @@
 
 #_{:clj-kondo/ignore [:clojure-lsp/unused-public-var]}
 (defn set-result [v]
-  (when (bound? #'*result*)
-    (check (= @*result* ::no-result) (str "Transaction result was already set: " (if-some [result @*result*] result "nil")))
+  (when (bound? #'*result*) ; This means some caller is interested in the result
     (reset! *result* v)))
