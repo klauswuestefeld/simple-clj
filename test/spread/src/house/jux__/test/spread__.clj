@@ -5,10 +5,12 @@
             [clojure.string :as string]
             clojure.walk
             [house.jux--.biz.user-- :refer [*user*]]
+            [house.jux--.biz.command-result-- :refer [*result* get-result set-result reset-result]]
             [simple.check2 :refer [check]]))
 
 (def previous-query-results (atom nil)) ;; TODO: remove this atom
 (def all-spreadsheets-folder (java.io/file "test/spread"))
+#_{:clj-kondo/ignore [:uninitialized-var]}
 (def ^:dynamic *test-spreadsheet*)
 
 (defn parse-csv [sheet-path]
@@ -263,10 +265,7 @@
 (defn- check-command-result! [coords expected new-state]
   (check-info! (some? new-state) "Command returned nil. Must return a state map." coords)
   (check-info! (map? new-state) (str "Command returned a " (.getClass new-state) ". Must return a state map.") coords)
-  (when-not (= expected "*")
-    (check-info! (contains? new-state :result) (str "Command returned the state without a :result key.") coords))
-  (let [actual (:result new-state)]
-    (check-result! actual expected coords)))
+  (check-result! (get-result) expected coords))
 
 (defn- resolve-command-fn [function-str line]
   (try
@@ -276,17 +275,19 @@
                    {:line line, :column "B"}))))
 
 (defn- execute-command [state {:keys [function user params result result-coords]}]
-  (let [command (resolve-command-fn function (:line result-coords))
-        command (if (string/blank? params)
-                  #(command state)
-                  #(command state (eval-string params)))
-        new-state (try
-                    (binding [*user* (eval-user user)]
-                      (command))
-                    (catch Throwable e
-                      (assoc state :result {::wrapped-exception e})))]
-    (check-command-result! result-coords result new-state)
-    (dissoc new-state :result)))
+  (binding [*result* (reset-result)]
+    (let [command (resolve-command-fn function (:line result-coords))
+          command (if (string/blank? params)
+                    #(command state)
+                    #(command state (eval-string params)))
+          new-state (try
+                      (binding [*user* (eval-user user)]
+                        (command))
+                      (catch Throwable e
+                        (set-result {::wrapped-exception e})
+                        state))]
+      (check-command-result! result-coords result new-state)
+      new-state)))
 
 (defn- line [command]
   (-> command :result-coords :line))
