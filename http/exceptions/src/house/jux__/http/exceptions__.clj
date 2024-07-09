@@ -21,7 +21,7 @@
           (println message (:uri request))
           (do (println "Exception handling" (:uri request))
               (.printStackTrace e)))
-        {:status 400
+        {:status (or (:status (ex-data e)) 400)
          :body   (->body e message expected?)}))))
 
 (defn wrap-exceptions [delegate-handler]
