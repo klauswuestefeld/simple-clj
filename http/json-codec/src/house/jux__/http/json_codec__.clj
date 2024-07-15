@@ -26,4 +26,6 @@
   (fn [request]
     (let [request (update request :body decode-if-necessary)
           response (delegate request)]
-      (update response :body pipe-json-if-necessary))))
+      (if (:handled response)
+        response
+        (update response :body pipe-json-if-necessary)))))

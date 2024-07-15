@@ -1,4 +1,4 @@
-(defproject house.jux/http.json-codec "2024.06.20"
+(defproject house.jux/http.json-codec "2024.07.15"
 
   :description "Wrapper that handles API thrown exceptions with a 400 status code."
   :url "https://github.com/klauswuestefeld/simple-clj/tree/master/http/json-codec"
