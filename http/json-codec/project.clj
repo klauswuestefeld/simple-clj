@@ -1,6 +1,6 @@
 (defproject house.jux/http.json-codec "2024.07.15"
 
-  :description "Wrapper that handles API thrown exceptions with a 400 status code."
+  :description "Ring-style wrapper to transparently encode and decode JSON to/from Clojure values."
   :url "https://github.com/klauswuestefeld/simple-clj/tree/master/http/json-codec"
 
   :license {:name "BSD 3-Clause"
