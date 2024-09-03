@@ -27,7 +27,7 @@
 (defn- unpack-actual-exception-if-necessary [exception]
   (let [actual (or (-> exception ex-data :actual-exception)
                    exception)
-        data (-> exception ex-data (dissoc :actual-exception))
+        data (-> exception ex-data (dissoc :actual-exception) (or {}))
         msg (or (.getMessage actual) (str (.getClass actual)))]
     (if (:omit-stacktrace data)
       (exceptions/expected msg data)
