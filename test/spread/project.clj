@@ -11,7 +11,6 @@
                  [ring/ring-jetty-adapter "1.6.2"]
                  [house.jux/biz.command-result "2024.07.01"]
                  [house.jux/biz.user "2024.06.10"]
-                 [house.jux/biz.timestamp "2024.08.30-SNAPSHOT"]
                  [house.jux/exceptions "2024.06.10"]
                  [house.jux/http.api "2024.06.11"]
                  [house.jux/http.exceptions "2024.06.24"]
