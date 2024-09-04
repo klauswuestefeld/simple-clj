@@ -10,6 +10,7 @@
                  [ring/ring-core "1.6.2"]
                  [ring/ring-jetty-adapter "1.6.2"]
                  [house.jux/biz.command-result "2024.09.04-SNAPSHOT"]
+                 [house.jux/biz.timestamp "2024.08.30-SNAPSHOT"]
                  [house.jux/biz.user "2024.06.10"]
                  [house.jux/exceptions "2024.06.10"]
                  [house.jux/http.api "2024.06.11"]
