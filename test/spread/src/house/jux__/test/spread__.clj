@@ -6,6 +6,7 @@
             clojure.walk
             [house.jux--.biz.user-- :refer [*user*]]
             [house.jux--.biz.command-result-- :refer [*result* get-result set-result reset-result]]
+            [house.jux--.biz.timestamp-- :refer [*timestamp* reset-timestamp]]
             [simple.check2 :refer [check]]))
 
 (def previous-query-results (atom nil)) ;; TODO: remove this atom
@@ -369,7 +370,8 @@
 (defn- run-tests-in-namespace! [namespace-folder]
   (let [subject-namespace (-> namespace-folder .getName symbol)
         empty-context     {:state {}}]
-    (run-tests-in-folder! empty-context subject-namespace namespace-folder)))
+    (binding [*timestamp* (reset-timestamp)]
+      (run-tests-in-folder! empty-context subject-namespace namespace-folder))))
 
 (defn- namespace-folders []
   (->> all-spreadsheets-folder sorted-files (filter #(.isDirectory %))))
