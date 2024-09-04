@@ -14,7 +14,10 @@
       (result)
       result)))
 
+(defn- capture-dynamic-bindings [v]
+  (if (fn? v) (bound-fn [] (v)) v))
+
 #_{:clj-kondo/ignore [:clojure-lsp/unused-public-var]}
 (defn set-result [v]
   (when (bound? #'*result*) ; This means some caller is interested in the result
-    (reset! *result* v)))
+    (reset! *result* (capture-dynamic-bindings v))))
