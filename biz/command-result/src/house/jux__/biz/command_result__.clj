@@ -5,15 +5,14 @@
 
 #_{:clj-kondo/ignore [:clojure-lsp/unused-public-var]}
 (defn reset-result []
-  (atom ::no-result))
+  (atom nil))
 
 #_{:clj-kondo/ignore [:clojure-lsp/unused-public-var]}
 (defn get-result []
   (let [result @*result*]
-    (cond
-      (= result ::no-result) nil
-      (fn? result) (result)
-      :else result)))
+    (if (fn? result)
+      (result)
+      result)))
 
 #_{:clj-kondo/ignore [:clojure-lsp/unused-public-var]}
 (defn set-result [v]
