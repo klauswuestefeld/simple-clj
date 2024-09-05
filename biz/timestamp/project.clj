@@ -1,4 +1,4 @@
-(defproject house.jux/biz.timestamp "2024.08.30-SNAPSHOT"
+(defproject house.jux/biz.timestamp "2024.09.05"
 
   :description "Support for *timestamp* (a dynamic var)."
   :url "https://github.com/klauswuestefeld/simple-clj/tree/master/biz/timestamp"
