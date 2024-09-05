@@ -1,7 +1,7 @@
-(defproject house.jux/biz.command-result "2024.09.05"
+(defproject house.jux/biz.timestamp "2024.09.05"
 
-  :description "Support for commands to return a result without polluting the state (uses a dynamic var)."
-  :url "https://github.com/klauswuestefeld/simple-clj/tree/master/biz/command-result"
+  :description "Support for *timestamp* (a dynamic var)."
+  :url "https://github.com/klauswuestefeld/simple-clj/tree/master/biz/timestamp"
 
   :license {:name "BSD 3-Clause"
             :url "https://github.com/klauswuestefeld/simple-clj/blob/master/LICENSE"}

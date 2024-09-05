@@ -1,4 +1,4 @@
-(defproject house.jux/test.spread "2024.09.03"
+(defproject house.jux/test.spread "2024.09.05"
 
   :description "Support for highly expressive, two-dimensional tests represented as spreadsheets."
   :url "https://github.com/klauswuestefeld/simple-clj/tree/master/test/spread"
@@ -9,7 +9,8 @@
   :dependencies [[org.clojure/data.csv "1.0.0"]
                  [ring/ring-core "1.6.2"]
                  [ring/ring-jetty-adapter "1.6.2"]
-                 [house.jux/biz.command-result "2024.07.01"]
+                 [house.jux/biz.command-result "2024.09.05"]
+                 [house.jux/biz.timestamp "2024.09.05"]
                  [house.jux/biz.user "2024.06.10"]
                  [house.jux/exceptions "2024.06.10"]
                  [house.jux/http.api "2024.06.11"]

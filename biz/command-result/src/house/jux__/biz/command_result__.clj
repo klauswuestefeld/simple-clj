@@ -5,17 +5,19 @@
 
 #_{:clj-kondo/ignore [:clojure-lsp/unused-public-var]}
 (defn reset-result []
-  (atom ::no-result))
+  (atom nil))
 
 #_{:clj-kondo/ignore [:clojure-lsp/unused-public-var]}
 (defn get-result []
   (let [result @*result*]
-    (cond
-      (= result ::no-result) nil
-      (fn? result) (result)
-      :else result)))
+    (if (fn? result)
+      (result)
+      result)))
+
+(defn- capture-dynamic-bindings [v]
+  (if (fn? v) (bound-fn [] (v)) v))
 
 #_{:clj-kondo/ignore [:clojure-lsp/unused-public-var]}
 (defn set-result [v]
   (when (bound? #'*result*) ; This means some caller is interested in the result
-    (reset! *result* v)))
+    (reset! *result* (capture-dynamic-bindings v))))

@@ -6,6 +6,7 @@
             clojure.walk
             [house.jux--.biz.user-- :refer [*user*]]
             [house.jux--.biz.command-result-- :refer [*result* get-result set-result reset-result]]
+            [house.jux--.biz.timestamp-- :refer [*timestamp*]]
             [simple.check2 :refer [check]]))
 
 (def previous-query-results (atom nil)) ;; TODO: remove this atom
@@ -248,7 +249,8 @@
           :query-line query-line})))))
 
 (defn- safe-query-result [state user segments]
-  (binding [*user* (eval-user user)]
+  (binding [*user* (eval-user user)
+            *timestamp* 1000000]
     (execute-query-segments state segments)))
 
 (defn- execute-query [state query-results-line query-column-number [user & segments] expected-result]
@@ -262,10 +264,10 @@
                                     (map-indexed vector))]
     (execute-query state query-results-line idx query result)))
 
-(defn- check-command-result! [coords expected new-state]
+(defn- check-command-result! [coords actual expected new-state]
   (check-info! (some? new-state) "Command returned nil. Must return a state map." coords)
   (check-info! (map? new-state) (str "Command returned a " (.getClass new-state) ". Must return a state map.") coords)
-  (check-result! (get-result) expected coords))
+  (check-result! actual expected coords))
 
 (defn- resolve-command-fn [function-str line]
   (try
@@ -281,12 +283,13 @@
                     #(command state)
                     #(command state (eval-string params)))
           new-state (try
-                      (binding [*user* (eval-user user)]
+                      (binding [*user* (eval-user user)
+                                *timestamp* 1000000]
                         (command))
                       (catch Throwable e
                         (set-result {::wrapped-exception e})
                         state))]
-      (check-command-result! result-coords result new-state)
+      (check-command-result! result-coords (get-result) result new-state)
       new-state)))
 
 (defn- line [command]
