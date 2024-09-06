@@ -1,8 +1,14 @@
 (ns house.jux--.http.json-codec--
-  (:require
-   [cheshire.core :as json])
-  (:import
-   [java.io BufferedReader BufferedWriter InputStream InputStreamReader OutputStreamWriter PipedInputStream PipedOutputStream]))
+  (:require [cheshire.core :as json]
+            [house.jux--.biz.command-result-- :as result])
+  (:import [java.io
+            BufferedReader
+            BufferedWriter
+            InputStream
+            InputStreamReader
+            OutputStreamWriter
+            PipedInputStream
+            PipedOutputStream]))
 
 (defn- pipe-json-if-necessary [value]
   (if (nil? value)
@@ -10,9 +16,8 @@
     (let [input  (PipedInputStream. (* 1024 32)) ; 32k buffer
           output (-> input PipedOutputStream. OutputStreamWriter. BufferedWriter.)]
       (future
-        (try
-          (json/generate-stream value output)
-          (finally (.close output))))
+        (try (result/redeem #(json/generate-stream % output) value)
+             (finally (.close output))))
       input)))
 
 (defn- decode [input]

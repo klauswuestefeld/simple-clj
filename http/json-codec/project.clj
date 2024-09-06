@@ -1,4 +1,4 @@
-(defproject house.jux/http.json-codec "2024.07.15"
+(defproject house.jux/http.json-codec "2024.09.06-SNAPSHOT"
 
   :description "Ring-style wrapper to transparently encode and decode JSON to/from Clojure values."
   :url "https://github.com/klauswuestefeld/simple-clj/tree/master/http/json-codec"
@@ -8,4 +8,6 @@
 
   :plugins [[lein-parent "0.3.9"]]
   :parent-project {:coords  [house.jux/parent-project "2024.06.10"]
-                   :inherit [:deploy-repositories :dependencies]})
+                   :inherit [:deploy-repositories :dependencies]} 
+  
+  :dependencies [[house.jux/biz.command-result "2024.09.06-SNAPSHOT"]])

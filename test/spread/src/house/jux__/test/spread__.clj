@@ -5,7 +5,7 @@
             [clojure.string :as string]
             clojure.walk
             [house.jux--.biz.user-- :refer [*user*]]
-            [house.jux--.biz.command-result-- :refer [*result* get-result set-result reset-result]]
+            [house.jux--.biz.command-result-- :refer [*result* voucher set-result reset-result]]
             [house.jux--.biz.timestamp-- :refer [*timestamp*]]
             [simple.check2 :refer [check]]))
 
@@ -289,7 +289,7 @@
                       (catch Throwable e
                         (set-result {::wrapped-exception e})
                         state))]
-      (check-command-result! result-coords (get-result) result new-state)
+      (check-command-result! result-coords (voucher) result new-state)
       new-state)))
 
 (defn- line [command]
