@@ -43,7 +43,7 @@
             {:user "tester",
              :function "update-profile",
              :params "{:phone 555}",
-             :result "*",
+             :result "\"Profile Updated\"",
              :result-coords {:line 9, :column "D"}},
             :query-results
             ["\"Bob\""
