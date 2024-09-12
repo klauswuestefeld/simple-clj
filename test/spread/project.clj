@@ -1,4 +1,4 @@
-(defproject house.jux/test.spread "2024.09.05"
+(defproject house.jux/test.spread "2024.09.12"
 
   :description "Support for highly expressive, two-dimensional tests represented as spreadsheets."
   :url "https://github.com/klauswuestefeld/simple-clj/tree/master/test/spread"
