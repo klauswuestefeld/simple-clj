@@ -4,9 +4,7 @@
             clojure.stacktrace
             [clojure.string :as string]
             clojure.walk
-            [house.jux--.biz.user-- :refer [*user*]]
             [house.jux--.biz.command-result-- :refer [*result* get-result set-result reset-result]]
-            [house.jux--.biz.timestamp-- :refer [*timestamp*]]
             [simple.check2 :refer [check]]))
 
 (def previous-query-results (atom nil)) ;; TODO: remove this atom
