@@ -4,9 +4,7 @@
             clojure.stacktrace
             [clojure.string :as string]
             clojure.walk
-            [house.jux--.biz.user-- :refer [*user*]]
             [house.jux--.biz.command-result-- :refer [*result* get-result set-result reset-result]]
-            [house.jux--.biz.timestamp-- :refer [*timestamp*]]
             [simple.check2 :refer [check]]))
 
 (def previous-query-results (atom nil)) ;; TODO: remove this atom
@@ -90,7 +88,7 @@
 (defn- ->initial-step [step]
   (-> step
       (assoc-in [:command :user] "nil")
-      (assoc-in [:command :function] "(fn [state & _ignored] state)")
+      (assoc-in [:command :function] "identity")
       (assoc-in [:command :result] "*")))
 
 (defn- steps [structure]
@@ -229,29 +227,45 @@
     (catch Throwable t
       (throw (RuntimeException. (str "Error reading user: " (exception->message t)))))))
 
+(defn- arity [function]
+  (-> function meta :arglists first count))
+
+(defn- run-fn [fn-var args ctx]
+  (let [arity (arity fn-var)
+        args  (if (= 3 arity)
+                (cond-> args
+                  (= 1 (count args)) (conj ::ignored ctx)
+                  (= 2 (count args)) (conj ctx))
+                args)]
+    (apply fn-var args)))
+
+(defn- run-query [ctx segment]
+  (let [form (-> (str "(" segment ")")
+                 compile-string
+                 with-underline)  ; The undeline symbol in the form refers to the var created with 'intern' above.
+        f      (first form)
+        fn-var (if (keyword? f) f (resolve f))
+        args   (eval (vec (rest form)))]
+    (run-fn fn-var args ctx)))
+
 (def initial-query-line 3)
 (defn execute-query-segments
-  ([state segments]
-   (execute-query-segments state segments initial-query-line))
+  ([state ctx segments]
+   (execute-query-segments state ctx segments initial-query-line))
 
-  ([value [segment & next-segments] query-line]
+  ([value ctx [segment & next-segments] query-line]
    (if (string/blank? segment)
      value
      (try
        (intern *ns* '_ value) ; Intern is a "def" that works at runtime (def creates the var at compile time). This indirection with this var is required because complex non-clojure objects such as #datascript/DB {...}, when added directy in the form, will give the error: "Can't embed object in code". Also it looks better in the print of the form than a huge state map.
-       (let [result (-> (str "(" segment ")")
-                        compile-string
-                        with-underline  ; The undeline symbol in the form refers to the var created with 'intern' above.
-                        eval)]
-         (execute-query-segments result next-segments (inc query-line)))
+       (let [result (run-query ctx segment)]
+         (execute-query-segments result ctx next-segments (inc query-line)))
        (catch Exception e
          {::wrapped-exception e
           :query-line query-line})))))
 
 (defn- safe-query-result [state user segments]
-  (binding [*user* (eval-user user)
-            *timestamp* 1000000]
-    (execute-query-segments state segments)))
+  (execute-query-segments state {:user (eval-user user) :timestamp 1000000} segments))
 
 (defn- execute-query [state query-results-line query-column-number [user & segments] expected-result]
   (let [column (query-column-idx->column query-column-number)
@@ -271,21 +285,18 @@
 
 (defn- resolve-command-fn [function-str line]
   (try
-    (eval-string function-str)
+    (->> function-str read-string resolve)
     (catch Exception e
       (throw-info! (str "Unable to resolve command '" function-str "' " (exception->message e))
                    {:line line, :column "B"}))))
 
 (defn- execute-command [state {:keys [function user params result result-coords]}]
   (binding [*result* (reset-result)]
-    (let [command (resolve-command-fn function (:line result-coords))
-          command (if (string/blank? params)
-                    #(command state)
-                    #(command state (eval-string params)))
+    (let [command   (resolve-command-fn function (:line result-coords))
+          ctx       {:user (eval-user user) :timestamp 1000000}
+          args      (if (string/blank? params) [state] [state (eval-string params)])
           new-state (try
-                      (binding [*user* (eval-user user)
-                                *timestamp* 1000000]
-                        (command))
+                      (run-fn command args ctx)
                       (catch Throwable e
                         (set-result {::wrapped-exception e})
                         state))]

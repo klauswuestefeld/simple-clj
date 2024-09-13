@@ -1,10 +1,9 @@
 (ns fixture.biz
-  (:require [house.jux--.biz.user-- :refer [user]]
-            [house.jux--.biz.command-result-- :refer [set-result]]))
+  (:require [house.jux--.biz.command-result-- :refer [set-result]]))
 
 #_{:clj-kondo/ignore [:clojure-lsp/unused-public-var]}
-(defn create-new-profile [state profile]
-  (let [state (->> (assoc profile :created-by (user))
+(defn create-new-profile [state profile {:keys [user]}]
+  (let [state (->> (assoc profile :created-by user)
                    (assoc state   :profile))]
     (set-result "Profile Created")
     state))
@@ -14,12 +13,12 @@
   (:profile state))
 
 #_{:clj-kondo/ignore [:clojure-lsp/unused-public-var]}
-(defn update-profile [state profile]
+(defn update-profile [state profile {:keys [user]}]
   (when (-> profile :name (= "BOOM"))
     (throw (RuntimeException. "Invalid name")))
   (let [state (-> state
                   (update :profile merge profile)
-                  (assoc-in [:profile :last-updated-by] (user)))]
+                  (assoc-in [:profile :last-updated-by] user))]
     (set-result "Profile Updated")
     state))
 

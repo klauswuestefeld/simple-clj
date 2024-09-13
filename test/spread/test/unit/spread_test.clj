@@ -19,7 +19,7 @@
           :steps
           [{:command
             {:user "nil",
-             :function "(fn [state & _ignored] state)",
+             :function "identity",
              :params "",
              :result "*",
              :result-coords {:line 7, :column "D"}},
