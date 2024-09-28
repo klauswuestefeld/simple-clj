@@ -111,7 +111,14 @@
                         (filter #(.isDirectory %)))]
     (map file-tree namespaces)))
 
+(def mutex (Object.))
+(defn- wrap-single-request [delegate]
+  (fn [request]
+    (locking mutex
+      (delegate request))))
+
 (defonce server (atom nil))
+
 (defn restart! []
   (some-> @server (.stop))
   (reset! server
@@ -120,6 +127,7 @@
               (api/wrap-api "/api/save-and-run" save-and-run {:anonymous? true})
               (api/wrap-api "/api/csv-read"  csv-read {:anonymous? true})
               (api/wrap-api "/api/get-test-tree" test-tree {:anonymous? true})
+              (wrap-single-request)
               (wrap-exceptions)
               (json-codec/wrap)
               (wrap-index-html)
