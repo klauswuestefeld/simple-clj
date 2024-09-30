@@ -505,6 +505,16 @@
     return { columns, rows };
   }
 
+  async function updateTestLayout() {
+    const response = await fetch("/api/update-layout", {
+      method: "POST",
+      body: JSON.stringify({
+        filename: currentFilePath,
+        "spreadsheet-dimensions": getSpreadsheetDimensions(),
+      }),
+    });
+  }
+
   async function saveSpreadsheetAndRunTests() {
     indicateTestsRunning();
     clearErrorHighlights();
@@ -603,10 +613,10 @@
 
     const eventHandlers = {
       onchange: saveSpreadsheetAndRunTests,
-      onresizecolumn: saveSpreadsheetAndRunTests,
-      onresizerow: saveSpreadsheetAndRunTests,
-      ondeleterow: saveSpreadsheetAndRunTests,
-      ondeletecolumn: saveSpreadsheetAndRunTests,
+      onresizecolumn: updateTestLayout,
+      onresizerow: updateTestLayout,
+      ondeleterow: updateTestLayout,
+      ondeletecolumn: updateTestLayout,
     };
 
     jspreadsheetObj = loadJSpreadsheet(spreadsheet, spreadsheetDOMElement, eventHandlers);

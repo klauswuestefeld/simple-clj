@@ -39,11 +39,20 @@
     (catch RuntimeException e
       (throw (unpack-actual-exception-if-necessary e)))))
 
+(defn- ->relative-path [filename]
+  (str spread/all-spreadsheets-folder filename))
+
+(defn- update-layout
+  ([relative-path spreadsheet-dimensions]
+   (layout/layout-save relative-path spreadsheet-dimensions))
+  ([_endpoint _user {:keys [filename spreadsheet-dimensions]}]
+   (update-layout (->relative-path filename) spreadsheet-dimensions)))
+
 (defn- save-and-run [endpoint user {:keys [filename spreadsheet-data spreadsheet-dimensions] :as params}]
-  (let [relative-path (str spread/all-spreadsheets-folder filename)]
+  (let [relative-path (->relative-path filename)]
     (when filename
-      (csv/write! relative-path spreadsheet-data))
-    (layout/layout-save relative-path spreadsheet-dimensions)
+      (csv/write! relative-path spreadsheet-data)
+      (update-layout relative-path spreadsheet-dimensions))
     (run-tests endpoint user params)))
 
 (defn- accumulate-general-tests [acc file]
@@ -64,7 +73,7 @@
           .exists)    (conj (csv/read! specific-test)))))
 
 (defn- csv-read [_endpoint _user {:keys [filename]}]
-  (let [relative-path   (str spread/all-spreadsheets-folder filename)
+  (let [relative-path   (->relative-path filename)
         data            (csv/read! relative-path)
         dimensions      (layout/layout-get relative-path)
         {:keys [commands initial-results queries]} (spread/cells-info data)
@@ -125,6 +134,7 @@
           (-> not-found
               (api/wrap-api "/api/run" run-tests {:anonymous? true})
               (api/wrap-api "/api/save-and-run" save-and-run {:anonymous? true})
+              (api/wrap-api "/api/update-layout" update-layout {:anonymous? true})
               (api/wrap-api "/api/csv-read"  csv-read {:anonymous? true})
               (api/wrap-api "/api/get-test-tree" test-tree {:anonymous? true})
               (wrap-single-request)
