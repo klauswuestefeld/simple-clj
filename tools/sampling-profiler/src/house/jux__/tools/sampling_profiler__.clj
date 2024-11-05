@@ -21,9 +21,7 @@
 
 (defn- summarize-samples! [{:keys [duration-sec interval-ms]}]
   (let [end-time (+ (System/currentTimeMillis) (* 1000 duration-sec))]
-    (println "before loop")
     (loop []
-      (println "looping")
       (Thread/sleep interval-ms)
       (swap! summary summarize (Thread/getAllStackTraces))
       (if (and @running
@@ -36,12 +34,8 @@
     (throw (IllegalStateException. "Profiler was already running.")))
   (reset! summary {:sample-count 0})
   (reset! running true)
-  (println "before future")
   (future
-    (println "in future")
     (try
-      (println "before summarize")
-
       (summarize-samples! options)
       (catch Exception e
         (.printStackTrace e)))))
