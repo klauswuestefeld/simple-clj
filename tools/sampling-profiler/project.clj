@@ -1,4 +1,4 @@
-(defproject house.jux/tools.sampling-profiler "2024.11.05-SNAPSHOT"
+(defproject house.jux/tools.sampling-profiler "2024.11.08"
 
   :description "A lightweight profiler that samples Thread/allStackTraces and allows you to filter relevant stack frames."
   :url "https://github.com/klauswuestefeld/simple-clj/tree/master/tools/sampling-profiler"
