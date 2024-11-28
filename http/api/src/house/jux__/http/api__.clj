@@ -16,7 +16,7 @@
   (let [user (-> request :session :user)]
     (if (or user anonymous?)
       {:status 200
-       :body   (->> request (call-api api-fn user))}
+       :body   (->> request (call-api api-fn (or user :anonymous)))}
       {:status 401
        :body   "Unauthorized API Call"})))
 
