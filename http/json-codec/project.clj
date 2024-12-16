@@ -1,4 +1,4 @@
-(defproject house.jux/http.json-codec "2024.10.07"
+(defproject house.jux/http.json-codec "2024.12.16"
 
   :description "Ring-style wrapper to transparently encode and decode JSON to/from Clojure values."
   :url "https://github.com/klauswuestefeld/simple-clj/tree/master/http/json-codec"

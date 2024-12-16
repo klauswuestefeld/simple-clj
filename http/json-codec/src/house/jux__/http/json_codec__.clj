@@ -29,10 +29,29 @@
   (cond-> body
     (input-stream? body) decode))
 
+(defn decode-request [request]
+  (update request :body decode-if-necessary))
+
+#_{:clj-kondo/ignore [:clojure-lsp/unused-public-var]}
+(defn wrap-decode-request [delegate]
+  (fn [request]
+    (delegate (decode-request request))))
+
+(defn- encode-response [response]
+  (if (:handled response)
+    response
+    (-> response
+        (assoc-in [:headers "Content-Type"] "application/json")
+        (update :body pipe-json-if-necessary))))
+
+#_{:clj-kondo/ignore [:clojure-lsp/unused-public-var]}
+(defn wrap-encode-response [delegate]
+  (fn [request]
+    (encode-response (delegate request))))
+
 (defn wrap [delegate]
   (fn [request]
-    (let [request (update request :body decode-if-necessary)
-          response (delegate request)]
-      (if (:handled response)
-        response
-        (update response :body pipe-json-if-necessary)))))
+    (-> request
+        decode-request
+        delegate
+        encode-response)))
