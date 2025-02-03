@@ -6,10 +6,11 @@
             [house.jux--.http.pprint-- :refer [wrap-pprint]]
             [house.jux--.http.json-codec-- :as json-codec]
             [clojure.java.io :as java.io]
-            [clojure.stacktrace :as stacktrace]
             [clojure.string :as string]
+            [ring.middleware.content-type :refer [content-type-response]]
             [ring.middleware.keyword-params :refer [wrap-keyword-params]]
             [ring.middleware.params :refer [wrap-params]]
+            [ring.middleware.resource :refer [resource-request]]
             [ring.util.response :refer [resource-response]]
             [house.jux--.test.spread--.csv :as csv]
             [house.jux--.test.spread--.layout :as layout]
@@ -18,11 +19,13 @@
 (def not-found (constantly {:status 404, :body "Not found"}))
 (def port 7357)
 
-(defn wrap-index-html [delegate]
+(defn wrap-frontend [delegate]
   (fn [request]
     (if (-> request :uri (= "/"))
       (resource-response "house/jux__/test/spread__/index.html")
-      (delegate request))))
+      (if-let [resource-response (resource-request request "house/jux__/test/spread__")]
+        (content-type-response resource-response request)
+        (delegate request)))))
 
 (defn- unpack-actual-exception-if-necessary [exception]
   (let [actual (or (-> exception ex-data :actual-exception)
@@ -140,7 +143,7 @@
               (wrap-single-request)
               (wrap-exceptions)
               (json-codec/wrap)
-              (wrap-index-html)
+              (wrap-frontend)
               (wrap-pprint)
               (wrap-keyword-params)
               (wrap-params)
