@@ -17,14 +17,8 @@
 
 (defn- git [& args] (-> (apply run "git" args) .trim))
 
-(def restore-exclusions [":(exclude)src/isa_bela/main.clj"
-                         ":(exclude)src/prevayler/coherence.clj"])
-
 (defn- git-restore [required-commit]
-  (apply git
-         "restore" "--source" required-commit "--staged" "--worktree" "--"
-         "src"  ; TODO: 2025-01-28 When all clients are using the new biz structure, change this to restore only biz* and jux.biz* folders.
-         restore-exclusions))
+  (git "restore" "--source" required-commit "--staged" "--worktree" "--" "src"))
 
 (defn- load! [required-commit]
   (git-restore required-commit)

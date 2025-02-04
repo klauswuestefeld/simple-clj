@@ -43,63 +43,63 @@
                                      :journal-file journal-file}))
 
 (deftest start!-test
-  (with-redefs [coherence/restore-exclusions []]
-    (clean-repo-dir!)
-    (doseq [f (fs/list-dir (fs/cwd) "coherence.journal*")]
-      (fs/delete f))
-    (repl/set-refresh-dirs src-dir) ; it would be nice if we could undo this after the test
-    (with-sh-dir repo-dir
-      (#'coherence/git "init")
-      (set-git-user)
-      (commit! {"src/coherence_test/biz.clj" "(ns coherence-test.biz)\n(defn my-business [state event _] (update state :events conj event))\n"})
+  (clean-repo-dir!)
+  (doseq [f (fs/list-dir (fs/cwd) "coherence.journal*")]
+    (fs/delete f))
+  (repl/set-refresh-dirs src-dir) ; it would be nice if we could undo this after the test
+
+  (with-sh-dir repo-dir
+    (#'coherence/git "init")
+    (set-git-user)
+    (commit! {"src/coherence_test/biz.clj" "(ns coherence-test.biz)\n(defn my-business [state event _] (update state :events conj event))\n"})
+    (repl/refresh)
+    (testing "it handles an event"
+      (let [hash (#'coherence/git "rev-parse" "HEAD")
+            prev (start-prevayler)]
+        (prev/handle! prev 1)
+        (is (= {:events [1]
+                :current-commit-hash hash}
+               @prev))))
+    (testing "it replays the journal using previous code and handle event with new code"
+      (commit! {"src/coherence_test/biz.clj" "(ns coherence-test.biz)\n(defn my-business [state event _] (update state :events conj (inc event)))\n"})
+      (repl/refresh) ;; simulates a system restart with new code
+      (let [hash (#'coherence/git "rev-parse" "HEAD")
+            prev (start-prevayler)]
+        (prev/handle! prev 1)
+        (is (= {:events [1 2]
+                :current-commit-hash hash}
+               @prev))))
+    (testing "it fails if workspace is dirty"
+      (spit (io/file repo-dir "src/coherence_test/biz.clj")  "(ns coherence-test.biz)\n(defn my-business [state event _] (update state :events conj (inc event)) ; some change\n)\n")
+      (is (thrown? RuntimeException #"Unable to provide code coherence"
+                   (start-prevayler)))
+      (#'coherence/git "reset" "--hard" "HEAD"))
+    (testing "it starts with :current-commit-hash from snapshot"
+      (let [hash (#'coherence/git "rev-parse" "HEAD")
+            prev (start-prevayler)] ; forces a new snapshot
+        (prev/handle! prev 1)
+        (is (= {:events [1 2 2]
+                :current-commit-hash hash}
+               @prev)))
+      (commit! {"src/coherence_test/biz.clj" "(ns coherence-test.biz)\n(defn my-business [state event _] (update state :events conj (inc (inc event))))\n"})
+      (repl/refresh) ;; simulates a system restart with new code
+      (let [hash (#'coherence/git "rev-parse" "HEAD")
+            prev (start-prevayler)]
+        (prev/handle! prev 1)
+        (is (= {:events [1 2 2 3]
+                :current-commit-hash hash}
+               @prev))))
+    (testing "it respects file deletion"
+      (commit! {"src/coherence_test/tobe_deleted.clj" "(ns coherence-test.tobe-deleted)\n(defn foo [] \"bar\")\n"})
       (repl/refresh)
-      (testing "it handles an event"
-        (let [hash (#'coherence/git "rev-parse" "HEAD")
-              prev (start-prevayler)]
-          (prev/handle! prev 1)
-          (is (= {:events [1]
-                  :current-commit-hash hash}
-                 @prev))))
-      (testing "it replays the journal using previous code and handle event with new code"
-        (commit! {"src/coherence_test/biz.clj" "(ns coherence-test.biz)\n(defn my-business [state event _] (update state :events conj (inc event)))\n"})
-        (repl/refresh) ;; simulates a system restart with new code
-        (let [hash (#'coherence/git "rev-parse" "HEAD")
-              prev (start-prevayler)]
-          (prev/handle! prev 1)
-          (is (= {:events [1 2]
-                  :current-commit-hash hash}
-                 @prev))))
-      (testing "it fails if workspace is dirty"
-        (spit (io/file repo-dir "src/coherence_test/biz.clj")  "(ns coherence-test.biz)\n(defn my-business [state event _] (update state :events conj (inc event)) ; some change\n)\n")
-        (is (thrown? RuntimeException #"Unable to provide code coherence"
-                     (start-prevayler)))
-        (#'coherence/git "reset" "--hard" "HEAD"))
-      (testing "it starts with :current-commit-hash from snapshot"
-        (let [hash (#'coherence/git "rev-parse" "HEAD")
-              prev (start-prevayler)] ; forces a new snapshot
-          (prev/handle! prev 1)
-          (is (= {:events [1 2 2]
-                  :current-commit-hash hash}
-                 @prev)))
-        (commit! {"src/coherence_test/biz.clj" "(ns coherence-test.biz)\n(defn my-business [state event _] (update state :events conj (inc (inc event))))\n"})
-        (repl/refresh) ;; simulates a system restart with new code
-        (let [hash (#'coherence/git "rev-parse" "HEAD")
-              prev (start-prevayler)]
-          (prev/handle! prev 1)
-          (is (= {:events [1 2 2 3]
-                  :current-commit-hash hash}
-                 @prev))))
-      (testing "it respects file deletion"
-        (commit! {"src/coherence_test/tobe_deleted.clj" "(ns coherence-test.tobe-deleted)\n(defn foo [] \"bar\")\n"})
-        (repl/refresh)
-        (is (= "bar" (apply (find-var 'coherence-test.tobe-deleted/foo) [])))
-        (start-prevayler) ;; adds new commit to journal
-        ;; TODO add an event that exercises the deleted namespace
-        (fs/delete (io/file repo-dir "src/coherence_test/tobe_deleted.clj" ))
-        (is (not (fs/exists? (io/file repo-dir "src/coherence_test/tobe_deleted.clj"))))
-        (#'coherence/git "add" ".")
-        (#'coherence/git "commit" "--no-gpg-sign" "-m" "a commit")
-        (repl/refresh)
-        (start-prevayler)
-        ;; TODO unload deleted namespace
-        (is (not (fs/exists? (io/file repo-dir "src/coherence_test/tobe_deleted.clj"))))))))
+      (is (= "bar" (apply (find-var 'coherence-test.tobe-deleted/foo) [])))
+      (start-prevayler) ;; adds new commit to journal
+      ;; TODO add an event that exercises the deleted namespace
+      (fs/delete (io/file repo-dir "src/coherence_test/tobe_deleted.clj" ))
+      (is (not (fs/exists? (io/file repo-dir "src/coherence_test/tobe_deleted.clj"))))
+      (#'coherence/git "add" ".")
+      (#'coherence/git "commit" "--no-gpg-sign" "-m" "a commit")
+      (repl/refresh)
+      (start-prevayler)
+      ;; TODO unload deleted namespace
+      (is (not (fs/exists? (io/file repo-dir "src/coherence_test/tobe_deleted.clj")))))))
