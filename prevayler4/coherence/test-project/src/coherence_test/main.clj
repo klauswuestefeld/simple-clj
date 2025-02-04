@@ -22,12 +22,11 @@
   (let [fun (find-var fn-sym)]
     (apply fun state args)))
 
-(defn start-prevayler! [journal-file]
-  (coherence/start! prevayler! {:business-fn business-fn
-                                :journal-file (io/file journal-file)}))
+(defn start-prevayler! []
+  (coherence/start! prevayler! {:business-fn business-fn}))
 
-(defn -main [& [port journal-file]]
+(defn -main [& [port]]
   (repl/refresh-all)
   (start-http-server!
-   (start-prevayler! journal-file)
+   (start-prevayler!)
    (Integer/parseInt port)))
