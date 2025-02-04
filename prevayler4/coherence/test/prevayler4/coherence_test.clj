@@ -74,7 +74,7 @@
       (is (thrown? RuntimeException #"Unable to provide code coherence"
                    (start-prevayler)))
       (#'coherence/git "reset" "--hard" "HEAD"))
-    (testing "it starts with :current-commit-hash from snapshot"
+    (testing "it respects :current-commit-hash from snapshot"
       (let [hash (#'coherence/git "rev-parse" "HEAD")
             prev (start-prevayler)] ; forces a new snapshot
         (prev/handle! prev 1)
@@ -102,4 +102,6 @@
       (repl/refresh)
       (start-prevayler)
       ;; TODO unload deleted namespace
-      (is (not (fs/exists? (io/file repo-dir "src/coherence_test/tobe_deleted.clj")))))))
+      (is (not (fs/exists? (io/file repo-dir "src/coherence_test/tobe_deleted.clj")))))
+    (testing "it supports more than one workspace dir" ;; TODO
+      )))
