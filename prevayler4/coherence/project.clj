@@ -7,5 +7,4 @@
                  [prevayler-clj/prevayler4 "2020.11.14"]
                  [org.clojure/tools.namespace "1.4.4"]
                  [simple/check "2024.06.09"]]
-  :profiles {:dev {:dependencies [[babashka/fs "0.5.24"]]
-                   :test-paths ["coherence-test-repo/src"]}})
+  :profiles {:dev {:dependencies [[babashka/fs "0.5.24"]]}})
