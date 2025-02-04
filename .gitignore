@@ -15,3 +15,6 @@ checkouts/
 .clj-kondo
 .lsp
 .vscode
+coherence-test-repo/src/*
+!coherence-test-repo/src/.donotdelete
+coherence.journal*
