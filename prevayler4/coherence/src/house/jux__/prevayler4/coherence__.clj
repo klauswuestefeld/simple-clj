@@ -80,4 +80,3 @@
         (when-let [event (commit-change-event (:current-commit-hash @new-prevayler))]
           (prevayler/handle! new-prevayler event)))
       new-prevayler)))
-
