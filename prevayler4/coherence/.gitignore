@@ -1,0 +1,3 @@
+/coherence-test-repo/src/*
+!/coherence-test-repo/src/.donotdelete
+/coherence.journal*
