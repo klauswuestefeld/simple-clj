@@ -66,13 +66,7 @@
         true
         (throw e)))))
 
-#_(defn- clean-any-dirt-from-previous-crashes []
-  (git-restore "HEAD")) ; Resets tracked files. Does not affect ignored files.
-
 (defn start! [start-prevayler-fn config]
-  #_(when production?
-    (clean-any-dirt-from-previous-crashes))
-  
   (let [coherent-mode? true]  ; TODO Allow override in dev environment
     (if coherent-mode?
       (check (not (workspace-dirty?)) "Unable to provide code coherence because workspace has uncommited files.")
