@@ -49,8 +49,9 @@
   (let [port (get-port)
         url (str "http://localhost:" port)
         process (process/start {:dir repo-dir} "clojure" "-M" "-m" "coherence-test.main" (str port))]
-    (wait/wait-for-port "localhost" port {:timeout 5000})
-    (new Server url process)))
+    (if (wait/wait-for-port "localhost" port {:timeout 5000})
+      (new Server url process)
+      (throw (ex-info "failed to start server" {:process #tap process})))))
 
 (defn get-state [server]
   (-> @(http/get (str (server-url server) "/state"))
@@ -79,10 +80,9 @@
         (is (= {:events [1 2]
                 :current-commit-hash (current-hash)}
                (get-state server)))))
-    #_(testing "it fails if workspace is dirty"
-      (spit (io/file repo-dir "src/coherence_test/biz.clj")  "(ns coherence-test.biz)\n(defn my-business [state event _] (update state :events conj (inc event)) ; some change\n)\n")
-      (is (thrown? RuntimeException #"Unable to provide code coherence"
-                   (start-prevayler)))
+    (testing "it fails if workspace is dirty"
+      (modify-file! "src/coherence_test/biz.clj" #(str % "; some change"))
+      (is (thrown? clojure.lang.ExceptionInfo #"failed to start server" (start-server!)))
       (#'coherence/git "reset" "--hard" "HEAD"))
     #_(testing "it respects :current-commit-hash from snapshot"
       (let [hash (#'coherence/git "rev-parse" "HEAD")
