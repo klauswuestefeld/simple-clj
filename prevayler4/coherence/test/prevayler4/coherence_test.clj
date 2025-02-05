@@ -8,7 +8,8 @@
             [clojure.edn :as edn]
             [prestancedesign.get-port :refer [get-port]]
             [babashka.wait :as wait]
-            [clojure.java.process :as process]))
+            [clojure.java.process :as process]
+            [clojure.string :as str]))
 
 (def project-dir (io/file "test-project"))
 (def repo-dir (io/file "test-repo"))
@@ -18,6 +19,11 @@
 (defn commit! [message]
   (git "add" ".")
   (git "commit" "--no-gpg-sign" "-m" message))
+
+(defn modify-file! [path modify-fn]
+  (let [file (io/file repo-dir path)
+        content (slurp file)]
+    (spit file (modify-fn content))))
 
 (defn setup-repo-dir! []
   (fs/delete-tree repo-dir)
@@ -65,15 +71,14 @@
         (is (= {:events [1]
                 :current-commit-hash (current-hash)}
                (get-state server)))))
-    #_(testing "it replays the journal using previous code and handle event with new code"
-      (commit! {"src/coherence_test/biz.clj" "(ns coherence-test.biz)\n(defn my-business [state event _] (update state :events conj (inc event)))\n"})
-      (repl/refresh) ;; simulates a system restart with new code
-      (let [hash (#'coherence/git "rev-parse" "HEAD")
-            prev (start-prevayler)]
-        (prev/handle! prev 1)
+    (testing "it replays the journal using previous code and handle event with new code"
+      (modify-file! "src/coherence_test/biz.clj" #(str/replace % #"\(def increment 0\)" "(def increment 1)"))
+      (commit! "increment 1")
+      (with-open [server (start-server!)]
+        (post-command! server {:fn-sym 'coherence-test.biz/inc-event :args [1]})
         (is (= {:events [1 2]
-                :current-commit-hash hash}
-               @prev))))
+                :current-commit-hash (current-hash)}
+               (get-state server)))))
     #_(testing "it fails if workspace is dirty"
       (spit (io/file repo-dir "src/coherence_test/biz.clj")  "(ns coherence-test.biz)\n(defn my-business [state event _] (update state :events conj (inc event)) ; some change\n)\n")
       (is (thrown? RuntimeException #"Unable to provide code coherence"
