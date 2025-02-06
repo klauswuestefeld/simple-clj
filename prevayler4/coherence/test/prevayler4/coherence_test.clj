@@ -20,11 +20,6 @@
   (git "add" ".")
   (git "commit" "--no-gpg-sign" "-m" message))
 
-(defn modify-file! [path modify-fn]
-  (let [file (io/file repo-dir path)
-        content (slurp file)]
-    (spit file (modify-fn content))))
-
 (defn setup-repo-dir! []
   (fs/delete-tree repo-dir)
   (fs/create-dir repo-dir)
@@ -73,7 +68,8 @@
                 :current-commit-hash (current-hash)}
                (get-state server)))))
     (testing "it replays the journal using previous code and handle event with new code"
-      (modify-file! "src/coherence_test/biz.clj" #(str/replace % #"\(def increment 0\)" "(def increment 1)"))
+      (fs/update-file (str (fs/path repo-dir "src/coherence_test/biz.clj"))
+                      #(str/replace % #"\(def increment 0\)" "(def increment 1)"))
       (commit! "increment 1")
       (with-open [server (start-server!)]
         (post-command! server {:fn-sym 'coherence-test.biz/inc-event :args [1]})
@@ -81,9 +77,9 @@
                 :current-commit-hash (current-hash)}
                (get-state server)))))
     (testing "it fails if workspace is dirty"
-      (modify-file! "src/coherence_test/biz.clj" #(str % "; some change"))
+      (fs/update-file (str (fs/path repo-dir "src/coherence_test/biz.clj")) #(str % "; some change"))
       (is (thrown? clojure.lang.ExceptionInfo #"failed to start server" (start-server!)))
-      (#'coherence/git "reset" "--hard" "HEAD"))
+      (git "reset" "--hard" "HEAD"))
     #_(testing "it respects :current-commit-hash from snapshot"
       (let [hash (#'coherence/git "rev-parse" "HEAD")
             prev (start-prevayler)]     ; forces a new snapshot
