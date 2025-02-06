@@ -8,7 +8,7 @@
             [clojure.edn :as edn]
             [prestancedesign.get-port :refer [get-port]]
             [babashka.wait :as wait]
-            [clojure.java.process :as process]
+            [babashka.process :as process]
             [clojure.string :as str]))
 
 (def project-dir (io/file "test-project"))
@@ -35,7 +35,7 @@
 (deftype Server [url process]
   java.lang.AutoCloseable
   (close [_]
-    (.destroy process)))
+    (process/destroy process)))
 
 (defn server-url [server]
   (.url server))
@@ -43,10 +43,10 @@
 (defn start-server! []
   (let [port (get-port)
         url (str "http://localhost:" port)
-        process (process/start {:dir repo-dir} "clojure" "-M" "-m" "coherence-test.main" (str port))]
+        process (process/process {:out :string :err :string :dir repo-dir} "clojure -M -m coherence-test.main" (str port))]
     (if (wait/wait-for-port "localhost" port {:timeout 5000})
       (new Server url process)
-      (throw (ex-info "failed to start server" {:process #tap process})))))
+      (throw (ex-info "failed to start server" {:process @process})))))
 
 (defn get-state [server]
   (-> @(http/get (str (server-url server) "/state"))
@@ -56,7 +56,9 @@
       edn/read))
 
 (defn post-command! [server command]
-  @(http/post (str (server-url server) "/command") {:body (pr-str command)}))
+  (let [{:keys [status] :as response} @(http/post (str (server-url server) "/command") {:body (pr-str command)})]
+    (when-not (= status 200)
+      (throw (ex-info "failed to post command" {:response response})))))
 
 (deftest start!-test
   (with-sh-dir repo-dir
@@ -94,19 +96,27 @@
         (is (= {:events [1 2 2 3]
                 :current-commit-hash (current-hash)}
                (get-state server)))))
-    #_(testing "it respects file deletion"
-      (commit! {"src/coherence_test/tobe_deleted.clj" "(ns coherence-test.tobe-deleted)\n(defn foo [] \"bar\")\n"})
-      (repl/refresh)
-      (is (= "bar" (apply (find-var 'coherence-test.tobe-deleted/foo) [])))
-      (start-prevayler) ;; adds new commit to journal
-      ;; TODO add an event that exercises the deleted namespace
-      (fs/delete (io/file repo-dir "src/coherence_test/tobe_deleted.clj" ))
-      (is (not (fs/exists? (io/file repo-dir "src/coherence_test/tobe_deleted.clj"))))
-      (#'coherence/git "add" ".")
-      (#'coherence/git "commit" "--no-gpg-sign" "-m" "a commit")
-      (repl/refresh)
-      (start-prevayler)
+    (testing "it respects file deletion"
+      (fs/write-lines (fs/path repo-dir "src/coherence_test/tobe_deleted.clj")
+                      ["(ns coherence-test.tobe-deleted)"
+                       "(defn foo [state event] (assoc state :foo event))"])
+      (commit! "add foobar")
+      (with-open [server (start-server!)]
+        (post-command! server {:fn-sym 'coherence-test.tobe-deleted/foo :args ["bar"]})
+        (is (= {:events [1 2 2 3]
+                :foo "bar"
+                :current-commit-hash (current-hash)}
+               (get-state server))))
+      (fs/delete (fs/path repo-dir "src/coherence_test/tobe_deleted.clj" ))
+      (commit! "delete foobar")
+      (with-open [server (start-server!)]
+        (post-command! server {:fn-sym 'coherence-test.biz/inc-event :args [1]})
+        (is (= {:events [1 2 2 3 3]
+                :foo "bar"
+                :current-commit-hash (current-hash)}
+               (get-state server)))
+        (is (not (fs/exists? (fs/path repo-dir "src/coherence_test/tobe_deleted.clj")))))
       ;; TODO unload deleted namespace
-      (is (not (fs/exists? (io/file repo-dir "src/coherence_test/tobe_deleted.clj")))))
+      )
     #_(testing "it supports more than one workspace dir" ;; TODO
       )))

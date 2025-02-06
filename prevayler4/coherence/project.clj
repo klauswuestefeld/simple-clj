@@ -8,6 +8,7 @@
                  [org.clojure/tools.namespace "1.4.4"]
                  [simple/check "2024.06.09"]]
   :profiles {:dev {:dependencies [[babashka/fs "0.5.24"]
+                                  [babashka/process "0.5.22"]
                                   [http-kit/http-kit "2.5.0"]
                                   [prestancedesign/get-port "0.1.1"]
                                   [babashka/babashka "1.12.196"]]}})
