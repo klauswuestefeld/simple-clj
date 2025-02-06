@@ -22,6 +22,7 @@
 (defn- git-restore [required-commit]
   (git "restore" "--source" required-commit "--staged" "--worktree" "--" "src"))
 
+;; TODO it should support more than one namespace level
 (defn- unload-deleted-namespaces [root-dir root-namespace-syms-set]
   (let [existing-namespaces (-> (find-namespaces-in-dir root-dir) set)
         candidates (->> (all-ns)
