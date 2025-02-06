@@ -80,21 +80,20 @@
       (fs/update-file (str (fs/path repo-dir "src/coherence_test/biz.clj")) #(str % "; some change"))
       (is (thrown? clojure.lang.ExceptionInfo #"failed to start server" (start-server!)))
       (git "reset" "--hard" "HEAD"))
-    #_(testing "it respects :current-commit-hash from snapshot"
-      (let [hash (#'coherence/git "rev-parse" "HEAD")
-            prev (start-prevayler)]     ; forces a new snapshot
-        (prev/handle! prev 1)
+    (testing "it respects :current-commit-hash from snapshot"
+      (with-open [server (start-server!)]
+        (post-command! server {:fn-sym 'coherence-test.biz/inc-event :args [1]})
         (is (= {:events [1 2 2]
-                :current-commit-hash hash}
-               @prev)))
-      (commit! {"src/coherence_test/biz.clj" "(ns coherence-test.biz)\n(defn my-business [state event _] (update state :events conj (inc (inc event))))\n"})
-      (repl/refresh) ;; simulates a system restart with new code
-      (let [hash (#'coherence/git "rev-parse" "HEAD")
-            prev (start-prevayler)]
-        (prev/handle! prev 1)
+                :current-commit-hash (current-hash)}
+               (get-state server))))
+      (fs/update-file (str (fs/path repo-dir "src/coherence_test/biz.clj"))
+                      #(str/replace % #"\(def increment 1\)" "(def increment 2)"))
+      (commit! "increment 2")
+      (with-open [server (start-server!)]
+        (post-command! server {:fn-sym 'coherence-test.biz/inc-event :args [1]})
         (is (= {:events [1 2 2 3]
-                :current-commit-hash hash}
-               @prev))))
+                :current-commit-hash (current-hash)}
+               (get-state server)))))
     #_(testing "it respects file deletion"
       (commit! {"src/coherence_test/tobe_deleted.clj" "(ns coherence-test.tobe-deleted)\n(defn foo [] \"bar\")\n"})
       (repl/refresh)
