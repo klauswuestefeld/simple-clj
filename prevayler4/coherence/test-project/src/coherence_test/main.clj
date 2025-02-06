@@ -22,11 +22,11 @@
   (let [fun (find-var fn-sym)]
     (apply fun state args)))
 
-(defn start-prevayler! []
-  (coherence/start! prevayler! {:business-fn business-fn}))
+(defn start-prevayler! [repo-dir]
+  (coherence/start! prevayler! {:business-fn business-fn} (io/file repo-dir) #{'coherence-test}))
 
-(defn -main [& [port]]
+(defn -main [& [port repo-dir]]
   (repl/refresh-all)
   (start-http-server!
-   (start-prevayler!)
+   (start-prevayler! repo-dir)
    (Integer/parseInt port)))

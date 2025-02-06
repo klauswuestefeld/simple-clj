@@ -43,7 +43,7 @@
 (defn start-server! []
   (let [port (get-port)
         url (str "http://localhost:" port)
-        process (process/process {:out :string :err :string :dir repo-dir} "clojure -M -m coherence-test.main" (str port))]
+        process (process/process {:out :string :err :string :dir repo-dir} "clojure -M -m coherence-test.main" (str port) (str (fs/absolutize (fs/path repo-dir "src"))))]
     (if (wait/wait-for-port "localhost" port {:timeout 5000})
       (new Server url process)
       (throw (ex-info "failed to start server" {:process @process})))))
@@ -119,7 +119,8 @@
                 :foo "bar"
                 :current-commit-hash (current-hash)}
                (get-state server)))
-        (is (not (fs/exists? (fs/path repo-dir "src/coherence_test/tobe_deleted.clj")))))
+        (is (not (fs/exists? (fs/path repo-dir "src/coherence_test/tobe_deleted.clj"))))
+        (is (thrown? clojure.lang.ExceptionInfo (post-command! server {:fn-sym 'coherence-test.tobe-deleted/foo :args ["bar"]}))))
       ;; TODO unload deleted namespace
       )
     #_(testing "it supports more than one workspace dir" ;; TODO
