@@ -80,7 +80,11 @@
                (get-state server)))))
     (testing "it fails if workspace is dirty"
       (fs/update-file (str (fs/path repo-dir "src/coherence_test/biz.clj")) #(str % "; some change"))
-      (is (thrown? clojure.lang.ExceptionInfo #"failed to start server" (start-server!)))
+      (try
+        (start-server!)
+        (is false "server should not have started")
+        (catch clojure.lang.ExceptionInfo e
+          (is (re-find #"Unable to provide code coherence because workspace has uncommited files" (-> e ex-data :process :err)))))
       (git "reset" "--hard" "HEAD"))
     (testing "it respects :current-commit-hash from snapshot"
       (with-open [server (start-server!)]
