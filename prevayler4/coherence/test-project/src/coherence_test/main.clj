@@ -23,7 +23,11 @@
     (apply fun state args)))
 
 (defn start-prevayler! [repo-dir]
-  (coherence/start! prevayler! {:business-fn business-fn} (io/file repo-dir) #{'coherence-test}))
+  (coherence/start! prevayler!
+                    {:business-fn business-fn}
+                    {:coherent-mode? true
+                     :src-dir (io/file repo-dir)
+                     :refreshable-namespaces #{'coherence-test}}))
 
 (defn -main [& [port repo-dir]]
   (repl/refresh-all)

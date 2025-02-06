@@ -19,26 +19,30 @@
 
 (defn- git [& args] (-> (apply run "git" args) .trim))
 
+;; TODO use refreshable namespaces to define what to restore
 (defn- git-restore [required-commit]
   (git "restore" "--source" required-commit "--staged" "--worktree" "--" "src"))
 
-;; TODO it should support more than one namespace level
-(defn- unload-deleted-namespaces [root-dir root-namespace-syms-set]
-  (let [existing-namespaces (-> (find-namespaces-in-dir root-dir) set)
+(defn- unload-deleted-namespaces [{:keys [src-dir refreshable-namespaces]}]
+  (let [existing-namespaces (-> (find-namespaces-in-dir src-dir) set)
+        _ (check (seq existing-namespaces) "no namespaces were found")
         candidates (->> (all-ns)
                         (filter (fn [namespace]
-                                  (let [root-sym (-> namespace ns-name name (str/split #"\.") first symbol)]
-                                    (contains? root-namespace-syms-set root-sym))))
+                                  (let [namespace-name (-> namespace ns-name name)]
+                                    (some
+                                     (fn [refreshable-namespace]
+                                       (str/starts-with? namespace-name (name refreshable-namespace)))
+                                     refreshable-namespaces))))
                         (filter (fn [namespace]
                                   (not (contains? existing-namespaces (ns-name namespace))))))]
     (doseq [candidate candidates]
       (remove-ns (ns-name candidate)))))
 
-(defn- load! [required-commit root-dir root-namespace-syms-set]
+(defn- load! [required-commit opts]
   (git-restore required-commit)
   (binding [*ns* (find-ns 'house.jux--.prevayler4.coherence--)] ; Any ns just to satisfy refresh's expectation of running in the repl.
     (repl/refresh))
-  (unload-deleted-namespaces root-dir root-namespace-syms-set))
+  (unload-deleted-namespaces opts))
 
 (defn commit-change-event [old-hash]
   (let [new-hash (git "rev-parse" "HEAD")]
@@ -51,7 +55,7 @@
       state
       (business-fn state event timestamp))))
 
-(defn- providing-coherence [business-fn root-dir root-namespace-syms-set]
+(defn- providing-coherence [business-fn opts]
   (let [loaded-commit (atom nil)]
     (fn [state event timestamp]
       (let [new-commit (:current-commit-hash event) ; Will be nil when event is a regular business event.
@@ -61,15 +65,15 @@
             required-commit (:current-commit-hash state)]
         (check required-commit "Journal event must be replayed with an associated commit.")
         (when-not (= required-commit @loaded-commit) ; Works for the first event also (current-commit-atom is nil).
-          (load! required-commit root-dir root-namespace-syms-set)
+          (load! required-commit opts)
           (reset! loaded-commit required-commit))
         (if new-commit
           state
           (business-fn state event timestamp))))))
 
-(defn- wrap-for-code-version-coherence [business-fn coherent-mode? root-dir root-namespace-syms-set]
+(defn- wrap-for-code-version-coherence [business-fn {:keys [coherent-mode?] :as opts}]
   (if coherent-mode?
-    (providing-coherence business-fn root-dir root-namespace-syms-set)
+    (providing-coherence business-fn opts)
     (ignoring-coherence  business-fn)))
 
 (defn- workspace-dirty? []
@@ -81,19 +85,17 @@
         true
         (throw e)))))
 
-(defn start! [start-prevayler-fn config root-dir root-namespace-syms-set]
-  (let [coherent-mode? true]  ; TODO Allow override in dev environment
-    (if coherent-mode?
-      (check (not (workspace-dirty?)) "Unable to provide code coherence because workspace has uncommited files.")
-      (println "COHERENCE IS OFF.\n  Journal replay might fail now or in future runs."))
+;; TODO trigger git reset when some property is on
+(defn start! [start-prevayler-fn config {:keys [coherent-mode?] :as opts}]
+  (if coherent-mode?
+    (check (not (workspace-dirty?)) "Unable to provide code coherence because workspace has uncommited files.")
+    (println "COHERENCE IS OFF.\n  Journal replay might fail now or in future runs."))
 
-    (let [new-prevayler (start-prevayler-fn (update config
-                                                    :business-fn
-                                                    wrap-for-code-version-coherence
-                                                    coherent-mode?
-                                                    root-dir
-                                                    root-namespace-syms-set))]
-      (when coherent-mode?
-        (when-let [event (commit-change-event (:current-commit-hash @new-prevayler))]
-          (prevayler/handle! new-prevayler event)))
-      new-prevayler)))
+  (let [new-prevayler (start-prevayler-fn (update config
+                                                  :business-fn
+                                                  wrap-for-code-version-coherence
+                                                  opts))]
+    (when coherent-mode?
+      (when-let [event (commit-change-event (:current-commit-hash @new-prevayler))]
+        (prevayler/handle! new-prevayler event)))
+    new-prevayler))
