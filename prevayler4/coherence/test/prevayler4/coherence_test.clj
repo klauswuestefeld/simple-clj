@@ -120,8 +120,6 @@
                 :current-commit-hash (current-hash)}
                (get-state server)))
         (is (not (fs/exists? (fs/path repo-dir "src/coherence_test/tobe_deleted.clj"))))
-        (is (thrown? clojure.lang.ExceptionInfo (post-command! server {:fn-sym 'coherence-test.tobe-deleted/foo :args ["bar"]}))))
-      ;; TODO unload deleted namespace
-      )
+        (is (thrown? clojure.lang.ExceptionInfo (post-command! server {:fn-sym 'coherence-test.tobe-deleted/foo :args ["bar"]})))))
     #_(testing "it supports more than one workspace dir" ;; TODO
       )))
