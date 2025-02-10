@@ -7,7 +7,6 @@
             [house.jux--.biz.command-result-- :refer [*result* get-result set-result reset-result]]
             [simple.check2 :refer [check]]))
 
-(def previous-query-results (atom nil)) ;; TODO: remove this atom
 (def all-spreadsheets-folder (java.io/file "test/spread"))
 #_{:clj-kondo/ignore [:uninitialized-var]}
 (def ^:dynamic *test-spreadsheet*)
@@ -46,14 +45,12 @@
        last
        (drop 4)))
 
-(defn- parse-query-results [provided-results]
-  (let [result (vec (map-indexed (fn [idx provided-result]
-                                   (if (string/blank? provided-result)
-                                     (nth @previous-query-results idx)
-                                     provided-result))
-                                 provided-results))]
-    (reset! previous-query-results result)
-    result))
+(defn- parse-query-results [provided-results previous-results]
+  (vec (map-indexed (fn [idx provided-result]
+                      (if (string/blank? provided-result)
+                        (nth previous-results idx)
+                        provided-result))
+                    provided-results)))
 
 (defn- throw-info! [msg info]
   (throw (ex-info msg (assoc info :spreadsheet *test-spreadsheet*))))
@@ -75,8 +72,8 @@
 (defn- query-column-idx->column [idx]
   (->column (+ 4 idx)))
 
-(defn- step->map [starting-line line [user function params command-result & query-results]]
-  (let [parsed-query-results (parse-query-results query-results)]
+(defn- step->map [starting-line line previous-results [user function params command-result & query-results]]
+  (let [parsed-query-results (parse-query-results query-results previous-results)]
     {:command {:user          user
                :function      function
                :params        params
@@ -91,12 +88,19 @@
       (assoc-in [:command :function] "identity")
       (assoc-in [:command :result] "*")))
 
-(defn- steps [structure]
+(defn- steps [structure initial-results]
   (let [starting-line (count (filter first-column-blank? structure))
         raw-steps        (->> structure
                               (drop starting-line)
-                              (map-indexed (partial step->map (inc starting-line)))
-                              vec)]
+                              (reduce (fn [{:as acc :keys [idx previous-results]} step-line]
+                                        (let [step (step->map (inc starting-line) idx previous-results step-line)]
+                                          (-> acc
+                                              (update :steps (fnil conj []) step)
+                                              (update :idx inc)
+                                              (assoc :previous-results (:query-results step)))))
+                                      {:previous-results initial-results
+                                       :idx 0})
+                              :steps)]
     (update raw-steps 0 ->initial-step)))
 
 (defn- check-blanks! [parsed-csv]
@@ -125,8 +129,8 @@
   (check-blanks! parsed-csv)
   (let [title           (-> parsed-csv first first)
         queries         (queries parsed-csv)
-        _               (reset! previous-query-results (initial-results parsed-csv))
-        steps           (steps parsed-csv)]
+        initial-results (initial-results parsed-csv)
+        steps           (steps parsed-csv initial-results)]
     {:title           title
      :queries         queries
      :steps           steps}))
