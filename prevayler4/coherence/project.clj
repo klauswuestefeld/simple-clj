@@ -11,4 +11,4 @@
                                   [babashka/process "0.5.22"]
                                   [http-kit/http-kit "2.5.0"]
                                   [prestancedesign/get-port "0.1.1"]
-                                  [babashka/babashka "1.12.196"]]}})
+                                  [diehard/diehard "0.11.12"]]}})

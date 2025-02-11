@@ -1,4 +1,6 @@
 {:deps {prevayler-clj/prevayler4 {:mvn/version "2024.03.18"}
         ring/ring-jetty-adapter {:mvn/version "1.13.0"}
         org.babashka/cli {:mvn/version "0.8.62"}
+        org.slf4j/slf4j-api {:mvn/version "1.6.1"}
+        org.slf4j/slf4j-simple {:mvn/version "1.6.1"}
         house.jux/prevayer4.coherence {:local/root ".."}}}

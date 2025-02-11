@@ -7,9 +7,9 @@
             [org.httpkit.client :as http]
             [clojure.edn :as edn]
             [prestancedesign.get-port :refer [get-port]]
-            [babashka.wait :as wait]
             [babashka.process :as process]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [diehard.core :refer [with-retry]]))
 
 (def project-dir (io/file "test-project"))
 (def repo-dir (io/file "test-repo"))
@@ -40,16 +40,27 @@
 (defn server-url [server]
   (.url server))
 
+(def host "localhost")
+
+(defn wait-for-server [port process]
+  (or
+   (with-retry {:retry-if (fn [server _]
+                            (and (nil? server) (process/alive? process)))
+                :delay-ms 100
+                :max-duration-ms 60000}
+     (try
+       (with-open [_socket (java.net.Socket. host port)]
+         (Server. (format "http://%s:%s" host port) process))
+       (catch Exception _)))
+   (do
+     (when (process/alive? process)
+       (process/destroy process))
+     (throw (ex-info "failed to start server" {:process @process})))))
+
 (defn start-server! [& {:keys [git-reset]}]
   (let [port (get-port)
-        url (str "http://localhost:" port)
         process (process/process {:out :string :err :string :dir repo-dir} "clojure -M -m coherence-test.main" "--port" (str port) "--repo-dir" (str (fs/absolutize (fs/path repo-dir "src"))) "--git-reset" (boolean git-reset))]
-    (if (wait/wait-for-port "localhost" port {:timeout 30000})
-      (new Server url process)
-      (do
-        (when (process/alive? process)
-          (process/destroy process))
-        (throw (ex-info "failed to start server" {:process @process}))))))
+    (wait-for-server port process)))
 
 (defn get-state [server]
   (-> @(http/get (str (server-url server) "/state"))
