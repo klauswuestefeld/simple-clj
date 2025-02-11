@@ -23,6 +23,8 @@
 (defn- git-restore [required-commit {:keys [src-dir refreshable-namespaces]}]
   (apply git "restore" "--source" required-commit "--staged" "--worktree" "--"
          (map (fn [sym]
+                ;; it only supports source dirs that are one level
+                ;; e.g. src is ok, but src/clj is not ok
                 (format "%s/%s" (.getName src-dir) (ns->path sym)))
               refreshable-namespaces)))
 
