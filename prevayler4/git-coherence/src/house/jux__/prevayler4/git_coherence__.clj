@@ -31,15 +31,17 @@
 (defn- unload-deleted-namespaces [{:keys [src-dir refreshable-namespaces]}]
   (let [existing-namespaces (-> (find-namespaces-in-dir src-dir) set)
         _ (check (seq existing-namespaces) "no namespaces were found")
-        candidates (->> (all-ns)
-                        (filter (fn [namespace]
+        refreshable-namespace? (fn [namespace]
                                   (let [namespace-name (-> namespace ns-name name)]
                                     (some
                                      (fn [refreshable-namespace]
                                        (str/starts-with? namespace-name (name refreshable-namespace)))
-                                     refreshable-namespaces))))
-                        (filter (fn [namespace]
-                                  (not (contains? existing-namespaces (ns-name namespace))))))]
+                                     refreshable-namespaces)))
+        deleted-namespace? (fn [namespace]
+                             (not (contains? existing-namespaces (ns-name namespace))))
+        candidates (->> (all-ns)
+                        (filter refreshable-namespace?)
+                        (filter deleted-namespace?))]
     (doseq [candidate candidates]
       (remove-ns (ns-name candidate)))))
 
