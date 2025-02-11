@@ -40,10 +40,10 @@
 (defn server-url [server]
   (.url server))
 
-(defn start-server! []
+(defn start-server! [& {:keys [git-reset]}]
   (let [port (get-port)
         url (str "http://localhost:" port)
-        process (process/process {:out :string :err :string :dir repo-dir} "clojure -M -m coherence-test.main" (str port) (str (fs/absolutize (fs/path repo-dir "src"))))]
+        process (process/process {:out :string :err :string :dir repo-dir} "clojure -M -m coherence-test.main" "--port" (str port) "--repo-dir" (str (fs/absolutize (fs/path repo-dir "src"))) "--git-reset" (boolean git-reset))]
     (if (wait/wait-for-port "localhost" port {:timeout 10000})
       (new Server url process)
       (do
@@ -84,11 +84,15 @@
     (testing "it fails if workspace is dirty"
       (fs/update-file (str (fs/path repo-dir "src/coherence_test/biz.clj")) #(str % "; some change"))
       (try
-        (start-server!)
-        (is false "server should not have started")
+        (with-open [_server (start-server!)]
+          (is false "server should not have started"))
         (catch clojure.lang.ExceptionInfo e
           (is (re-find #"Unable to provide code coherence because workspace has uncommited files" (-> e ex-data :process :err)))))
       (git "reset" "--hard" "HEAD"))
+    (testing "it respects git reset"
+      (fs/update-file (str (fs/path repo-dir "src/coherence_test/biz.clj")) #(str % "; some change"))
+      (with-open [_server (start-server! :git-reset true)]
+        (is (not (#'coherence/workspace-dirty?)))))
     (testing "it respects :current-commit-hash from snapshot"
       (with-open [server (start-server!)]
         (post-command! server {:fn-sym 'coherence-test.biz/inc-event :args [1]})

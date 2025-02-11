@@ -4,7 +4,8 @@
             [prevayler-clj.prevayler4 :refer [prevayler! handle!]]
             [house.jux--.prevayler4.coherence-- :as coherence]
             [clojure.java.io :as io]
-            [clojure.tools.namespace.repl :as repl]))
+            [clojure.tools.namespace.repl :as repl]
+            [babashka.cli :as cli]))
 
 (defn handler [prevayler]
   (fn [{:keys [uri body]}]
@@ -22,15 +23,17 @@
   (let [fun (find-var fn-sym)]
     (apply fun state args)))
 
-(defn start-prevayler! [repo-dir]
+(defn start-prevayler! [repo-dir git-reset]
   (coherence/start! prevayler!
                     {:business-fn business-fn}
                     {:coherent-mode? true
+                     :git-reset? git-reset
                      :src-dir (io/file repo-dir)
                      :refreshable-namespaces #{'coherence-test}}))
 
-(defn -main [& [port repo-dir]]
-  (repl/refresh-all)
-  (start-http-server!
-   (start-prevayler! repo-dir)
-   (Integer/parseInt port)))
+(defn -main [& args]
+  (let [{{:keys [port repo-dir git-reset]} :opts} (cli/parse-args args {:coerce {:port :long :git-reset :boolean}})]
+    (repl/refresh-all)
+    (start-http-server!
+     (start-prevayler! repo-dir git-reset)
+     port)))
