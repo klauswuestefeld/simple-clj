@@ -22,7 +22,6 @@
 (defn- ns->path [sym]
   (-> sym name (str/replace "." "/") (str/replace "-" "_")))
 
-;; TODO use refreshable namespaces to define what to restore
 (defn- git-restore [required-commit {:keys [src-dir refreshable-namespaces]}]
   (apply git "restore" "--source" required-commit "--staged" "--worktree" "--"
          (map (fn [sym]
