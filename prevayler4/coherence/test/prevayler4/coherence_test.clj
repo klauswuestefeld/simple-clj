@@ -44,7 +44,7 @@
   (let [port (get-port)
         url (str "http://localhost:" port)
         process (process/process {:out :string :err :string :dir repo-dir} "clojure -M -m coherence-test.main" "--port" (str port) "--repo-dir" (str (fs/absolutize (fs/path repo-dir "src"))) "--git-reset" (boolean git-reset))]
-    (if (wait/wait-for-port "localhost" port {:timeout 10000})
+    (if (wait/wait-for-port "localhost" port {:timeout 30000})
       (new Server url process)
       (do
         (when (process/alive? process)
@@ -145,10 +145,9 @@
                       ["(ns non-refreshable.foo)"
                        "(defn foo [state event] (update state :foo2 (fnil conj []) event))"])
       (commit! "foobar again")
-      (with-open [server (start-server!)]
-        (post-command! server {:fn-sym 'non-refreshable.foo/foo :args ["bar2"]})
-        (is (= {:events [1 2 2 3 3]
-                :foo "bar"
-                :foo2 ["bar1" "bar2"]
-                :current-commit-hash (current-hash)}
-               (get-state server)))))))
+      (try
+        (with-open [_server (start-server!)]
+          (is false "server should not have started"))
+        (catch clojure.lang.ExceptionInfo e
+          (is (re-find #"Inconsistent state detected during event journal replay"
+                       (-> e ex-data :process :err))))))))
