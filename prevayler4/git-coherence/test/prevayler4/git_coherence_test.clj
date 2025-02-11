@@ -92,8 +92,17 @@
         (is (= {:events [1 2]
                 :current-commit-hash (current-hash)}
                (get-state server)))))
-    (testing "it fails if workspace is dirty"
+    (testing "it fails if workspace is dirty (non staged files)"
       (fs/update-file (str (fs/path repo-dir "src/coherence_test/biz.clj")) #(str % "; some change"))
+      (try
+        (with-open [_server (start-server!)]
+          (is false "server should not have started"))
+        (catch clojure.lang.ExceptionInfo e
+          (is (re-find #"Unable to provide code coherence because workspace has uncommited files" (-> e ex-data :process :err)))))
+      (git "reset" "--hard" "HEAD"))
+    (testing "it fails if workspace is dirty (non staged files)"
+      (fs/update-file (str (fs/path repo-dir "src/coherence_test/biz.clj")) #(str % "; some change"))
+      (git "add" "src/coherence_test/biz.clj")
       (try
         (with-open [_server (start-server!)]
           (is false "server should not have started"))

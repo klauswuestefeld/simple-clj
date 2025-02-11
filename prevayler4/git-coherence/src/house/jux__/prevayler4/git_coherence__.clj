@@ -84,13 +84,7 @@
     (ignoring-coherence  business-fn)))
 
 (defn- workspace-dirty? []
-  (try
-    (run "git" "diff" "--quiet")
-    false
-    (catch Exception e
-      (if (-> e ex-data :result :exit (= 1))
-        true
-        (throw e)))))
+  (not (str/blank? (run "git" "status" "--porcelain"))))
 
 (defn start!
   "Starts a prevayler instance that has git coherence enabled.
