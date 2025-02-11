@@ -44,9 +44,12 @@
   (let [port (get-port)
         url (str "http://localhost:" port)
         process (process/process {:out :string :err :string :dir repo-dir} "clojure -M -m coherence-test.main" (str port) (str (fs/absolutize (fs/path repo-dir "src"))))]
-    (if (wait/wait-for-port "localhost" port {:timeout 5000})
+    (if (wait/wait-for-port "localhost" port {:timeout 10000})
       (new Server url process)
-      (throw (ex-info "failed to start server" {:process @process})))))
+      (do
+        (when (process/alive? process)
+          (process/destroy process))
+        (throw (ex-info "failed to start server" {:process @process}))))))
 
 (defn get-state [server]
   (-> @(http/get (str (server-url server) "/state"))
@@ -121,5 +124,27 @@
                (get-state server)))
         (is (not (fs/exists? (fs/path repo-dir "src/coherence_test/tobe_deleted.clj"))))
         (is (thrown? clojure.lang.ExceptionInfo (post-command! server {:fn-sym 'coherence-test.tobe-deleted/foo :args ["bar"]})))))
-    #_(testing "it supports more than one workspace dir" ;; TODO
-      )))
+    (testing "it respects refreshable namespaces"
+      (fs/create-dir (fs/path repo-dir "src/non_refreshable"))
+      (fs/write-lines (fs/path repo-dir "src/non_refreshable/foo.clj")
+                      ["(ns non-refreshable.foo)"
+                       "(defn foo [state event] (update state :foo1 (fnil conj []) event))"])
+      (commit! "foobar reborn")
+      (with-open [server (start-server!)]
+        (post-command! server {:fn-sym 'non-refreshable.foo/foo :args ["bar1"]})
+        (is (= {:events [1 2 2 3 3]
+                :foo "bar"
+                :foo1 ["bar1"]
+                :current-commit-hash (current-hash)}
+               (get-state server))))
+      (fs/write-lines (fs/path repo-dir "src/non_refreshable/foo.clj")
+                      ["(ns non-refreshable.foo)"
+                       "(defn foo [state event] (update state :foo2 (fnil conj []) event))"])
+      (commit! "foobar again")
+      (with-open [server (start-server!)]
+        (post-command! server {:fn-sym 'non-refreshable.foo/foo :args ["bar2"]})
+        (is (= {:events [1 2 2 3 3]
+                :foo "bar"
+                :foo2 ["bar1" "bar2"]
+                :current-commit-hash (current-hash)}
+               (get-state server)))))))

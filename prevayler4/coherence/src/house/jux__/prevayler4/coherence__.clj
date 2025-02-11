@@ -19,9 +19,15 @@
 
 (defn- git [& args] (-> (apply run "git" args) .trim))
 
+(defn- ns->path [sym]
+  (-> sym name (str/replace "." "/") (str/replace "-" "_")))
+
 ;; TODO use refreshable namespaces to define what to restore
-(defn- git-restore [required-commit]
-  (git "restore" "--source" required-commit "--staged" "--worktree" "--" "src"))
+(defn- git-restore [required-commit {:keys [src-dir refreshable-namespaces]}]
+  (apply git "restore" "--source" required-commit "--staged" "--worktree" "--"
+         (map (fn [sym]
+                (format "%s/%s" (.getName src-dir) (ns->path sym)))
+              refreshable-namespaces)))
 
 (defn- unload-deleted-namespaces [{:keys [src-dir refreshable-namespaces]}]
   (let [existing-namespaces (-> (find-namespaces-in-dir src-dir) set)
@@ -39,7 +45,7 @@
       (remove-ns (ns-name candidate)))))
 
 (defn- load! [required-commit opts]
-  (git-restore required-commit)
+  (git-restore required-commit opts)
   (binding [*ns* (find-ns 'house.jux--.prevayler4.coherence--)] ; Any ns just to satisfy refresh's expectation of running in the repl.
     (repl/refresh))
   (unload-deleted-namespaces opts))
