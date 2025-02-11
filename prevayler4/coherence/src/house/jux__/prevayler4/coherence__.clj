@@ -12,10 +12,8 @@
   (let [result (apply shell/sh args)]
     (if (-> result :exit zero?)
       (:out result)
-      (do
-        (prn result)
-        (throw (ex-info (str "Shell command exited with " (:exit result))
-                        {:command args, :result result}))))))
+      (throw (ex-info (str "Shell command exited with " (:exit result))
+                      {:command args, :result result})))))
 
 (defn- git [& args] (-> (apply run "git" args) .trim))
 
@@ -90,7 +88,24 @@
         true
         (throw e)))))
 
-(defn start! [start-prevayler-fn config {:keys [coherent-mode? git-reset?] :as opts}]
+(defn start!
+  "Starts a prevayler instance that has git coherence enabled.
+
+   Arguments:
+   - start-prevayler-fn: a function that starts the underlying prevayler instance,
+                         it must receive one argument containing the prevayler config
+   - config: the prevayler config to be passed to the underlying prevayler instance
+   - opts: a map with the following options
+     - coherent-mode?: whether coherence should be enabled or not
+     - git-reset?: whether the git workspace should be reset
+     - src-dir: a java.io.File that refers to the directory that points to the source directory,
+                currently only one level directory is supported 
+                (e.g. \"src\" is ok, but \"src/clj\" is not
+     - refreshable-namespaces: a sequence of namespace symbols that need to be refreshed,
+                               all namespaces under the given symbol will be refreshed
+                               (e.g. ['my-system.biz] will refresh 'my-system.biz, 
+                               'my-system.biz.somenamespace and so on)"
+  [start-prevayler-fn config {:keys [coherent-mode? git-reset?] :as opts}]
   (when git-reset?
     (git "reset" "--hard" "HEAD"))
   (if coherent-mode?
