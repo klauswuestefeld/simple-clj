@@ -2,7 +2,7 @@
   (:require [ring.adapter.jetty :refer [run-jetty]]
             [clojure.edn :as edn]
             [prevayler-clj.prevayler4 :refer [prevayler! handle!]]
-            [house.jux--.prevayler4.coherence-- :as coherence]
+            [house.jux--.prevayler4.git-coherence-- :as coherence]
             [clojure.java.io :as io]
             [clojure.tools.namespace.repl :as repl]
             [babashka.cli :as cli]))

@@ -1,8 +1,8 @@
-(ns prevayler4.coherence-test
+(ns prevayler4.git-coherence-test
   (:require [clojure.test :refer [deftest is testing]]
             [clojure.java.shell :refer [with-sh-dir]]
             [clojure.java.io :as io]
-            [house.jux--.prevayler4.coherence-- :as coherence]
+            [house.jux--.prevayler4.git-coherence-- :as coherence]
             [babashka.fs :as fs]
             [org.httpkit.client :as http]
             [clojure.edn :as edn]

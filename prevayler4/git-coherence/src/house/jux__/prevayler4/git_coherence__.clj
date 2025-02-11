@@ -1,4 +1,4 @@
-(ns house.jux--.prevayler4.coherence--
+(ns house.jux--.prevayler4.git-coherence--
   (:require
    [clojure.java.shell :as shell]
    [clojure.tools.namespace.repl :as repl]
@@ -45,7 +45,7 @@
 
 (defn- load! [required-commit opts]
   (git-restore required-commit opts)
-  (binding [*ns* (find-ns 'house.jux--.prevayler4.coherence--)] ; Any ns just to satisfy refresh's expectation of running in the repl.
+  (binding [*ns* (find-ns 'house.jux--.prevayler4.git-coherence--)] ; Any ns just to satisfy refresh's expectation of running in the repl.
     (repl/refresh))
   (unload-deleted-namespaces opts))
 
