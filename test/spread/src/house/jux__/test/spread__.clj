@@ -19,16 +19,15 @@
   (->> (parse-csv require-sheet-path)
        (into {})))
 
-(defn- eval-require [namespace req ref]
-  (let [req    (symbol req)
-        refers (string/split ref #" ")
-        refers (vec (map symbol refers))]
-    (eval `(ns ~namespace (:require [~req :refer ~refers])))))
-
-(defn- eval-requires [namespace requires]
-  (doseq [[require refers] requires]
-    (eval-require namespace require refers))
-  (eval-require namespace "clojure.test" "is"))
+(defn- require-into-ns [namespace requires]
+  (binding [*ns* (find-ns namespace)]
+    (doseq [[req refers] requires]
+      (let [req-sym (symbol req)]
+        (require req-sym)
+        (doseq [sym (map symbol (string/split refers #" "))]
+          (refer req-sym :only [sym]))))
+    (require 'clojure.test)
+    (refer 'clojure.test :only ['is])))
 
 (def first-column-blank? (comp #{""} first)) ; Description line and command lines do not have the first column blank.
 
@@ -332,7 +331,7 @@
     (remove-ns namespace)
     (require-namespace-refer-all namespace (symbol subject-namespace))
     (doseq [requirements all-requirements]
-      (eval-requires namespace requirements))))
+      (require-into-ns namespace requirements))))
 
 (defn- run-test-in-file! [{:as context :keys [all-requirements state]} subject-namespace file]
   (binding [*ns* (find-ns 'house.jux--.test.spread--)  ; TODO: find a cleaner way. This can be any ns just to set the root binding of *ns*
