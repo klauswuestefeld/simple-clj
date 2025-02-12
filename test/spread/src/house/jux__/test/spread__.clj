@@ -225,9 +225,15 @@
     form
     (list-insert form '_ 1)))
 
-(defn- eval-user [user-string]
+(defn- resolve-symbol [arg]
+  (if (symbol? arg)
+   (let [arg (resolve arg)]
+     @arg)
+    arg))
+
+(defn- resolve-user [user-string]
   (try
-    (eval-string user-string)
+    (-> user-string read-string resolve-symbol)
     (catch Throwable t
       (throw (RuntimeException. (str "Error reading user: " (exception->message t)))))))
 
@@ -269,7 +275,7 @@
           :query-line query-line})))))
 
 (defn- safe-query-result [state user segments]
-  (execute-query-segments state {:user (eval-user user) :timestamp 1000000} segments))
+  (execute-query-segments state {:user (resolve-user user) :timestamp 1000000} segments))
 
 (defn- execute-query [state query-results-line query-column-number [user & segments] expected-result]
   (let [column (query-column-idx->column query-column-number)
@@ -297,7 +303,7 @@
 (defn- execute-command [state {:keys [function user params result result-coords]}]
   (binding [*result* (reset-result)]
     (let [command   (resolve-command-fn function (:line result-coords))
-          ctx       {:user (eval-user user) :timestamp 1000000}
+          ctx       {:user (resolve-user user) :timestamp 1000000}
           args      (if (string/blank? params) [state] [state (eval-string params)])
           new-state (try
                       (run-fn command args ctx)
