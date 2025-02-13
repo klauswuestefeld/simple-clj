@@ -71,7 +71,7 @@
                     state)
             required-commit (:current-commit-hash state)]
         (check required-commit "Journal event must be replayed with an associated commit.")
-        (when-not (= required-commit @loaded-commit) ; Works for the first event also (loaded-commit-atom is nil).
+        (when-not (= required-commit @loaded-commit) ; Works for the first event also (loaded-commit atom is nil).
           (load! required-commit opts)
           (reset! loaded-commit required-commit))
         (if new-commit
