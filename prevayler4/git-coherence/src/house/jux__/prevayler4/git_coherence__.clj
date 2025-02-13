@@ -104,11 +104,12 @@
                                         All namespaces whose names start with one of the given symbols
                                         will be refreshed (e.g. ['my-system.biz] will refresh 'my-system.biz,
                                         'my-system.biz.somenamespace and so on)"
-  [start-prevayler-fn config {:keys [coherent-mode? git-reset? repo-dir] :as opts}]
+  [start-prevayler-fn config {:keys [coherent-mode? git-reset? repo-dir src-dir] :as opts}]
   (let [opts (cond-> opts
-               (nil? (:repo-dir opts)) (assoc :repo-dir (.getAbsoluteFile (io/file ""))))]
+               (nil? repo-dir) (assoc :repo-dir (.getAbsoluteFile (io/file ""))))]
     (when git-reset?
       (git "reset" "--hard" :dir repo-dir))
+    (repl/set-refresh-dirs (io/file (:repo-dir opts) src-dir))
     (if coherent-mode?
       (check (not (workspace-dirty?)) "Unable to provide code coherence because workspace has uncommited files.")
       (println "COHERENCE IS OFF.\n  Journal replay might fail now or in future runs."))
