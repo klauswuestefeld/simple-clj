@@ -105,7 +105,7 @@
                                'my-system.biz.somenamespace and so on)"
   [start-prevayler-fn config {:keys [coherent-mode? git-reset?] :as opts}]
   (when git-reset?
-    (git "reset" "--hard" "HEAD"))
+    (git "reset" "--hard"))
   (if coherent-mode?
     (check (not (workspace-dirty?)) "Unable to provide code coherence because workspace has uncommited files.")
     (println "COHERENCE IS OFF.\n  Journal replay might fail now or in future runs."))
