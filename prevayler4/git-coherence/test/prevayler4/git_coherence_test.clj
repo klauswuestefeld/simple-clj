@@ -59,7 +59,7 @@
 
 (defn start-server! [& {:keys [git-reset]}]
   (let [port (get-port)
-        process (process/process {:out :string :err :string :dir repo-dir} "clojure -M -m coherence-test.main" "--port" (str port) "--repo-dir" (str (fs/absolutize (fs/path repo-dir "src"))) "--git-reset" (boolean git-reset))]
+        process (process/process {:out :string :err :string :dir repo-dir} "clojure -M -m coherence-test.main" "--port" (str port) "--repo-dir" (str (fs/absolutize repo-dir)) "--git-reset" (boolean git-reset))]
     (wait-for-server port process)))
 
 (defn get-state [server]

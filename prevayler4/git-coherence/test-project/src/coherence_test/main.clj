@@ -28,7 +28,8 @@
                     {:business-fn business-fn}
                     {:coherent-mode? true
                      :git-reset? git-reset
-                     :src-dir (io/file repo-dir)
+                     :repo-dir (.getAbsoluteFile (io/file repo-dir))
+                     :src-dir "src"
                      :refreshable-namespace-prefixes #{'coherence-test}}))
 
 (defn -main [& args]

@@ -1,6 +1,7 @@
 (ns house.jux--.prevayler4.git-coherence--
   (:require
    [clojure.java.shell :as shell]
+   [clojure.java.io :as io]
    [clojure.tools.namespace.repl :as repl]
    [clojure.tools.namespace.find :refer [find-namespaces-in-dir]]
    [prevayler-clj.prevayler4 :as prevayler]
@@ -15,21 +16,21 @@
       (throw (ex-info (str "Shell command exited with " (:exit result))
                       {:command args, :result result})))))
 
-(defn- git [& args] (-> (apply run "git" args) .trim))
+(defn- git [& args]
+  (-> (apply run "git" args) .trim))
 
 (defn- ns->path [sym]
   (-> sym name (str/replace "." "/") (str/replace "-" "_")))
 
-(defn- git-restore [required-commit {:keys [src-dir refreshable-namespace-prefixes]}]
+(defn- git-restore [required-commit {:keys [repo-dir src-dir refreshable-namespace-prefixes]}]
   (apply git "restore" "--source" required-commit "--staged" "--worktree" "--"
-         (map (fn [sym]
-                ;; it only supports source dirs that are one level
-                ;; e.g. src is ok, but src/clj is not ok
-                (format "%s/%s" (.getName src-dir) (ns->path sym)))
-              refreshable-namespace-prefixes)))
+         (concat
+          (map (fn [sym] (format "%s/%s" src-dir (ns->path sym)))
+               refreshable-namespace-prefixes)
+          [:dir repo-dir])))
 
-(defn- unload-deleted-namespaces [{:keys [src-dir refreshable-namespace-prefixes]}]
-  (let [existing-namespaces (-> (find-namespaces-in-dir src-dir) set)
+(defn- unload-deleted-namespaces [{:keys [repo-dir src-dir refreshable-namespace-prefixes]}]
+  (let [existing-namespaces (-> (find-namespaces-in-dir (io/file repo-dir src-dir)) set)
         _ (check (seq existing-namespaces) "no namespaces were found")
         refreshable-namespace? (fn [namespace]
                                   (let [namespace-name (-> namespace ns-name name)]
@@ -51,8 +52,8 @@
     (repl/refresh))
   (unload-deleted-namespaces opts))
 
-(defn commit-change-event [old-hash]
-  (let [new-hash (git "rev-parse" "HEAD")]
+(defn commit-change-event [old-hash {:keys [repo-dir]}]
+  (let [new-hash (git "rev-parse" "HEAD" :dir repo-dir)]
     (when-not (= new-hash old-hash)
       {:current-commit-hash new-hash})))
 
@@ -96,25 +97,27 @@
    - opts: a map with the following options
      - coherent-mode?: whether coherence should be enabled or not
      - git-reset?: whether the git workspace should be reset
-     - src-dir: a java.io.File that refers to the directory that points to the source directory,
-                currently only one level directory is supported 
-                (e.g. \"src\" is ok, but \"src/clj\" is not
+     - repo-dir: an absolute java.io.File that points to the git repository directory,
+                 defaults to the process working directory
+     - src-dir: the path of the source directory as a string
      - refreshable-namespaces-prefixes: a sequence of namespace symbols that need to be refreshed.
                                         All namespaces whose names start with one of the given symbols
                                         will be refreshed (e.g. ['my-system.biz] will refresh 'my-system.biz,
                                         'my-system.biz.somenamespace and so on)"
-  [start-prevayler-fn config {:keys [coherent-mode? git-reset?] :as opts}]
-  (when git-reset?
-    (git "reset" "--hard"))
-  (if coherent-mode?
-    (check (not (workspace-dirty?)) "Unable to provide code coherence because workspace has uncommited files.")
-    (println "COHERENCE IS OFF.\n  Journal replay might fail now or in future runs."))
+  [start-prevayler-fn config {:keys [coherent-mode? git-reset? repo-dir] :as opts}]
+  (let [opts (cond-> opts
+               (nil? (:repo-dir opts)) (assoc :repo-dir (.getAbsoluteFile (io/file ""))))]
+    (when git-reset?
+      (git "reset" "--hard" :dir repo-dir))
+    (if coherent-mode?
+      (check (not (workspace-dirty?)) "Unable to provide code coherence because workspace has uncommited files.")
+      (println "COHERENCE IS OFF.\n  Journal replay might fail now or in future runs."))
 
-  (let [new-prevayler (start-prevayler-fn (update config
-                                                  :business-fn
-                                                  wrap-for-code-version-coherence
-                                                  opts))]
-    (when coherent-mode?
-      (when-let [event (commit-change-event (:current-commit-hash @new-prevayler))]
-        (prevayler/handle! new-prevayler event)))
-    new-prevayler))
+    (let [new-prevayler (start-prevayler-fn (update config
+                                                    :business-fn
+                                                    wrap-for-code-version-coherence
+                                                    opts))]
+      (when coherent-mode?
+        (when-let [event (commit-change-event (:current-commit-hash @new-prevayler) opts)]
+          (prevayler/handle! new-prevayler event)))
+      new-prevayler)))
