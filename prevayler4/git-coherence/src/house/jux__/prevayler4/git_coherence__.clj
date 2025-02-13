@@ -99,8 +99,8 @@
      - src-dir: a java.io.File that refers to the directory that points to the source directory,
                 currently only one level directory is supported 
                 (e.g. \"src\" is ok, but \"src/clj\" is not
-     - refreshable-namespaces: a sequence of namespace symbols that need to be refreshed,
-                               all namespaces under the given symbol will be refreshed
+     - refreshable-namespaces: a sequence of namespace symbols that need to be refreshed.
+                               All namespaces under each given symbol will be refreshed
                                (e.g. ['my-system.biz] will refresh 'my-system.biz, 
                                'my-system.biz.somenamespace and so on)"
   [start-prevayler-fn config {:keys [coherent-mode? git-reset?] :as opts}]
