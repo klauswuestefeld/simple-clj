@@ -323,13 +323,18 @@
 (defn- run-test [state {:keys [queries steps]}]
   (reduce (partial execute-step queries) state steps))
 
-(defn- require-namespace-refer-all [namespace required-namespace]
-  (eval `(ns ~namespace (:require [~required-namespace :refer :all]))))
+(defn- require-namespace-refer-all [required-namespace]
+  (let [req-sym (symbol required-namespace)]
+    (require req-sym)
+    (refer req-sym)
+    (refer 'clojure.core))) ; namespaces created with create-ns dont have clojure.core refer already set-up
 
 (defn- init-requires [subject-namespace all-requirements]
   (let [namespace 'tmp.spreads]
     (remove-ns namespace)
-    (require-namespace-refer-all namespace (symbol subject-namespace))
+    (create-ns namespace)
+    (in-ns namespace)
+    (require-namespace-refer-all subject-namespace)
     (doseq [requirements all-requirements]
       (require-into-ns namespace requirements))))
 
@@ -390,7 +395,7 @@
                      (run-tests-in-folder! new-context subject-namespace subfolder))))))))
 
 (defn- run-tests-in-namespace! [namespace-folder]
-  (let [subject-namespace (-> namespace-folder .getName symbol)
+  (let [subject-namespace (.getName namespace-folder)
         empty-context     {:state {}}]
     (run-tests-in-folder! empty-context subject-namespace namespace-folder)))
 
