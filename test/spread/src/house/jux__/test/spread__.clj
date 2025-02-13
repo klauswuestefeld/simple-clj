@@ -329,11 +329,14 @@
     (refer req-sym)
     (refer 'clojure.core))) ; namespaces created with create-ns dont have clojure.core refer already set-up
 
+(defn- set-up-namespace [namespace]
+  (remove-ns namespace)
+  (create-ns namespace)
+  (in-ns namespace))
+
 (defn- init-requires [subject-namespace all-requirements]
   (let [namespace 'tmp.spreads]
-    (remove-ns namespace)
-    (create-ns namespace)
-    (in-ns namespace)
+    (set-up-namespace namespace)
     (require-namespace-refer-all subject-namespace)
     (doseq [requirements all-requirements]
       (require-into-ns namespace requirements))))
