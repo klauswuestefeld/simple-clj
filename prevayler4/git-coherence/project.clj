@@ -3,11 +3,20 @@
   :url "https://github.com/klauswuestefeld/simple-clj/tree/master/prevayler4/git-coherence"
   :license {:name "BSD 3-Clause"
             :url "https://github.com/klauswuestefeld/simple-clj/blob/master/LICENSE"}
-  ;; keep this dependencies list in sync with deps.edn
+
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;
+  ;; Keep this dependencies list in sync with deps.edn !!!
+  ;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   :dependencies [[org.clojure/clojure "1.12.0"]
                  [prevayler-clj/prevayler4 "2024.03.18"]
                  [org.clojure/tools.namespace "1.4.4"]
                  [simple/check "2024.06.09"]]
+
+
+            
   :profiles {:dev {:dependencies [[babashka/fs "0.5.24"]
                                   [babashka/process "0.5.22"]
                                   [http-kit/http-kit "2.5.0"]
