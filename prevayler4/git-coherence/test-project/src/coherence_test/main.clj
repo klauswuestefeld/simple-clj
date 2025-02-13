@@ -29,7 +29,7 @@
                     {:coherent-mode? true
                      :git-reset? git-reset
                      :src-dir (io/file repo-dir)
-                     :refreshable-namespaces #{'coherence-test}}))
+                     :refreshable-namespace-prefixes #{'coherence-test}}))
 
 (defn -main [& args]
   (let [{{:keys [port repo-dir git-reset]} :opts} (cli/parse-args args {:coerce {:port :long :git-reset :boolean}})]

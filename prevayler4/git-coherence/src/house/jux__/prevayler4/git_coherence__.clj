@@ -20,23 +20,23 @@
 (defn- ns->path [sym]
   (-> sym name (str/replace "." "/") (str/replace "-" "_")))
 
-(defn- git-restore [required-commit {:keys [src-dir refreshable-namespaces]}]
+(defn- git-restore [required-commit {:keys [src-dir refreshable-namespace-prefixes]}]
   (apply git "restore" "--source" required-commit "--staged" "--worktree" "--"
          (map (fn [sym]
                 ;; it only supports source dirs that are one level
                 ;; e.g. src is ok, but src/clj is not ok
                 (format "%s/%s" (.getName src-dir) (ns->path sym)))
-              refreshable-namespaces)))
+              refreshable-namespace-prefixes)))
 
-(defn- unload-deleted-namespaces [{:keys [src-dir refreshable-namespaces]}]
+(defn- unload-deleted-namespaces [{:keys [src-dir refreshable-namespace-prefixes]}]
   (let [existing-namespaces (-> (find-namespaces-in-dir src-dir) set)
         _ (check (seq existing-namespaces) "no namespaces were found")
         refreshable-namespace? (fn [namespace]
                                   (let [namespace-name (-> namespace ns-name name)]
                                     (some
-                                     (fn [refreshable-namespace]
-                                       (str/starts-with? namespace-name (name refreshable-namespace)))
-                                     refreshable-namespaces)))
+                                     (fn [prefix]
+                                       (str/starts-with? namespace-name (name prefix)))
+                                     refreshable-namespace-prefixes)))
         deleted-namespace? (fn [namespace]
                              (not (contains? existing-namespaces (ns-name namespace))))
         candidates (->> (all-ns)
@@ -99,10 +99,10 @@
      - src-dir: a java.io.File that refers to the directory that points to the source directory,
                 currently only one level directory is supported 
                 (e.g. \"src\" is ok, but \"src/clj\" is not
-     - refreshable-namespaces: a sequence of namespace symbols that need to be refreshed.
-                               All namespaces whose names start with one of the given symbols
-                               will be refreshed (e.g. ['my-system.biz] will refresh 'my-system.biz,
-                               'my-system.biz.somenamespace and so on)"
+     - refreshable-namespaces-prefixes: a sequence of namespace symbols that need to be refreshed.
+                                        All namespaces whose names start with one of the given symbols
+                                        will be refreshed (e.g. ['my-system.biz] will refresh 'my-system.biz,
+                                        'my-system.biz.somenamespace and so on)"
   [start-prevayler-fn config {:keys [coherent-mode? git-reset?] :as opts}]
   (when git-reset?
     (git "reset" "--hard"))
