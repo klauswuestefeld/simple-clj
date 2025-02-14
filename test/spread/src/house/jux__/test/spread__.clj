@@ -219,16 +219,25 @@
   (let [[l r] (split-at index lst)]
     (concat l [elem] r)))
 
-(defn- with-underline [form]
+(defn- replace-underscore [val form]
+ (clojure.walk/postwalk
+  (fn [x]
+    (cond
+      (= x '_) val
+      (and (seq? x) (not (vector? x))) (apply list x)
+      :else x))
+  form))
+
+(defn- with-underline [form current-result]
   (if (->> form deep-flatten (some #{'_}))
-    form
-    (list-insert form '_ 1)))
+    (replace-underscore current-result form)
+    (list-insert form current-result 1)))
 
 (defn- resolve-symbol [arg]
   (if (symbol? arg)
    (let [arg (resolve arg)]
      @arg)
-    arg))
+   arg))
 
 (defn- resolve-user [user-string]
   (try
@@ -248,10 +257,13 @@
                 args)]
     (apply fn-var args)))
 
-(defn- run-query [ctx segment]
-  (let [form (-> (str "(" segment ")")
+(defn- run-query [ctx segment current-result]
+  (let [safe-result (if (seq? current-result)
+                      (vec current-result)
+                      current-result)
+        form (-> (str "(" segment ")")
                  compile-string
-                 with-underline)  ; The undeline symbol in the form refers to the var created with 'intern' above.
+                 (with-underline safe-result))
         f      (first form)
         fn-var (if (keyword? f) f (resolve f))
         args   (eval (vec (rest form)))]
@@ -266,8 +278,7 @@
    (if (string/blank? segment)
      value
      (try
-       (intern *ns* '_ value) ; Intern is a "def" that works at runtime (def creates the var at compile time). This indirection with this var is required because complex non-clojure objects such as #datascript/DB {...}, when added directy in the form, will give the error: "Can't embed object in code". Also it looks better in the print of the form than a huge state map.
-       (let [result (run-query ctx segment)]
+       (let [result (run-query ctx segment value)]
          (execute-query-segments result ctx next-segments (inc query-line)))
        (catch Exception e
          {::wrapped-exception e
