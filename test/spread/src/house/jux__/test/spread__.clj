@@ -257,6 +257,13 @@
                 args)]
     (apply fn-var args)))
 
+(defn- parse-args [args resolved-result] ;; uses mapv because conj order matters
+  (mapv (fn [arg]
+         (if (= resolved-result arg)
+           arg
+           (eval arg)))
+       args))
+
 (defn- run-query [ctx segment current-result]
   (let [safe-result (if (seq? current-result)
                       (vec current-result)
@@ -266,7 +273,7 @@
                  (with-underline safe-result))
         f      (first form)
         fn-var (if (keyword? f) f (resolve f))
-        args   (eval (vec (rest form)))]
+        args   (parse-args (vec (rest form)) safe-result)]
     (run-fn fn-var args ctx)))
 
 (def initial-query-line 3)
