@@ -22,11 +22,15 @@
 (defn- ns->path [sym]
   (-> sym name (str/replace "." "/") (str/replace "-" "_")))
 
-(defn- git-restore [required-commit {:keys [repo-dir src-dir refreshable-namespace-prefixes]}]
+(defn- restore-paths [{:keys [repo-dir src-dir]} prefix]
+  (filter
+   #(.exists (io/file repo-dir %))
+   [(str src-dir "/" (ns->path prefix)) (str src-dir "/" (ns->path prefix) ".clj")]))
+
+(defn- git-restore [required-commit {:keys [repo-dir src-dir refreshable-namespace-prefixes] :as opts}]
   (apply git "restore" "--source" required-commit "--staged" "--worktree" "--"
          (concat
-          (map (fn [sym] (format "%s/%s" src-dir (ns->path sym)))
-               refreshable-namespace-prefixes)
+          (mapcat (partial restore-paths opts) refreshable-namespace-prefixes)
           [:dir repo-dir])))
 
 (defn- unload-deleted-namespaces [{:keys [repo-dir src-dir refreshable-namespace-prefixes]}]

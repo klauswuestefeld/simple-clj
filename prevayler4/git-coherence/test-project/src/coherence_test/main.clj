@@ -23,18 +23,22 @@
   (let [fun (find-var fn-sym)]
     (apply fun state args)))
 
-(defn start-prevayler! [repo-dir git-reset]
+(defn start-prevayler! [repo-dir git-reset prefixes]
   (coherence/start! prevayler!
                     {:business-fn business-fn}
                     {:coherent-mode? true
                      :git-reset? git-reset
                      :repo-dir (.getAbsoluteFile (io/file repo-dir))
                      :src-dir "src"
-                     :refreshable-namespace-prefixes #{'coherence-test}}))
+                     :refreshable-namespace-prefixes prefixes}))
 
 (defn -main [& args]
-  (let [{{:keys [port repo-dir git-reset]} :opts} (cli/parse-args args {:coerce {:port :long :git-reset :boolean}})]
+  (let [{{:keys [port repo-dir git-reset prefixes]} :opts} (cli/parse-args args
+                                                                  {:coerce
+                                                                   {:port :long
+                                                                    :git-reset :boolean
+                                                                    :prefixes [:symbol]}})]
     (repl/refresh-all)
     (start-http-server!
-     (start-prevayler! repo-dir git-reset)
+     (start-prevayler! repo-dir git-reset prefixes)
      port)))

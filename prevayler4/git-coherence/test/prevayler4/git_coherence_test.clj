@@ -55,9 +55,9 @@
        (process/destroy process))
      (throw (ex-info "failed to start server" {:process @process})))))
 
-(defn start-server! [& {:keys [git-reset]}]
+(defn start-server! [& {:keys [git-reset prefixes] :or {prefixes ["coherence-test"]}}]
   (let [port (get-port)
-        process (process/process {:out :string :err :string :dir repo-dir} "clojure" "-Sdeps" (format "{:deps {house.jux/prevayler4.git-coherence {:local/root \"%s\"}}}" (str (fs/absolutize (fs/path "")))) "-M" "-m" "coherence-test.main" "--port" (str port) "--repo-dir" (str (fs/absolutize repo-dir)) "--git-reset" (boolean git-reset))]
+        process (apply process/process {:out :string :err :string :dir repo-dir} "clojure" "-Sdeps" (format "{:deps {house.jux/prevayler4.git-coherence {:local/root \"%s\"}}}" (str (fs/absolutize (fs/path "")))) "-M" "-m" "coherence-test.main" "--port" (str port) "--repo-dir" (str (fs/absolutize repo-dir)) "--git-reset" (boolean git-reset) (mapcat #(do ["--prefixes" %]) prefixes))]
     (wait-for-server port process)))
 
 (defn get-state [server]
@@ -128,6 +128,11 @@
           (is (= {:events [1 2 2 3]
                   :current-commit-hash (current-hash)}
                  (get-state server)))))
+      (testing "it supports prefix that is the entire name of a namespace"
+        (with-open [server (start-server! :prefixes ["coherence-test.biz"])]
+          (is (= {:events [1 2 2 3]
+                  :current-commit-hash (current-hash)}
+                 (get-state server)))))
       (testing "it respects file deletion"
         (fs/write-lines (fs/path repo-dir "src/coherence_test/tobe_deleted.clj")
                         ["(ns coherence-test.tobe-deleted)"
@@ -171,4 +176,5 @@
             (is false "server should not have started"))
           (catch clojure.lang.ExceptionInfo e
             (is (re-find #"Inconsistent state detected during event journal replay"
-                         (-> e ex-data :process :err)))))))))
+                         (-> e ex-data :process :err))))))
+      )))
