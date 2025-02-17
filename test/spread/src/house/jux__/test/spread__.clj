@@ -259,9 +259,13 @@
 
 (defn- parse-args [args resolved-result] ;; uses mapv because conj order matters
   (mapv (fn [arg]
-         (if (= resolved-result arg)
-           arg
-           (eval arg)))
+          (cond
+            (= resolved-result arg) arg
+            (list? arg) (let [f      (first arg)
+                              fn-var (if (keyword? f) f (resolve f))
+                              args   (vec (rest arg))]
+                          (apply fn-var (parse-args args resolved-result)))
+            :else (resolve-symbol arg)))
        args))
 
 (defn- run-query [ctx segment current-result]
