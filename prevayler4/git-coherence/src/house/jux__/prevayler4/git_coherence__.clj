@@ -6,7 +6,8 @@
    [clojure.tools.namespace.find :refer [find-namespaces-in-dir]]
    [prevayler-clj.prevayler4 :as prevayler]
    [simple.check2 :refer [check]]
-   [clojure.string :as str]))
+   [clojure.string :as str]
+   [clojure.set :as set]))
 
 (defn- run [& args]
   (apply prn args)
@@ -33,30 +34,17 @@
           (mapcat (partial restore-paths opts) refreshable-namespace-prefixes)
           [:dir repo-dir])))
 
-(defn- unload-deleted-namespaces [{:keys [repo-dir src-dir refreshable-namespace-prefixes]}]
-  (let [existing-namespaces (-> (find-namespaces-in-dir (io/file repo-dir src-dir)) set)
-        _ (check (seq existing-namespaces) "no namespaces were found")
-        refreshable-namespace? (fn [namespace]
-                                  (let [namespace-name (-> namespace ns-name name)]
-                                    (some
-                                     (fn [prefix]
-                                       (str/starts-with? namespace-name (name prefix)))
-                                     refreshable-namespace-prefixes)))
-        deleted-namespace? (fn [namespace]
-                             (not (contains? existing-namespaces (ns-name namespace))))
-        candidates (->> (all-ns)
-                        (filter refreshable-namespace?)
-                        (filter deleted-namespace?))]
-    (doseq [candidate candidates]
-      (remove-ns (ns-name candidate)))))
-
-(defn- load! [required-commit opts]
-  (git-restore required-commit opts)
-  (binding [*ns* (find-ns 'house.jux--.prevayler4.git-coherence--)] ; Any ns just to satisfy refresh's expectation of running in the repl.
-    (let [r (repl/refresh)]
-      (when (instance? java.lang.Throwable r)
-        (throw r))))
-  (unload-deleted-namespaces opts))
+(defn- load! [required-commit {:keys [repo-dir src-dir] :as opts}]
+  (let [namespaces-dir (io/file repo-dir src-dir)
+        namespaces-before (-> (find-namespaces-in-dir namespaces-dir) set)]
+    (git-restore required-commit opts)
+    (let [namespaces-after (-> (find-namespaces-in-dir namespaces-dir) set)]
+      (binding [*ns* (find-ns 'house.jux--.prevayler4.git-coherence--)] ; Any ns just to satisfy refresh's expectation of running in the repl.
+        (let [r (repl/refresh)]
+          (when (instance? java.lang.Throwable r)
+            (throw r))))
+      (doseq [namespace (set/difference namespaces-before namespaces-after)]
+        (remove-ns namespace)))))
 
 (defn commit-change-event [old-hash {:keys [repo-dir]}]
   (let [new-hash (git "rev-parse" "HEAD" :dir repo-dir)]
