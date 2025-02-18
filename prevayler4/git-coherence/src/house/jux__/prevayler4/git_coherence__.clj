@@ -54,8 +54,10 @@
   (git-restore required-commit opts)
   (binding [*ns* (find-ns 'house.jux--.prevayler4.git-coherence--)] ; Any ns just to satisfy refresh's expectation of running in the repl.
     (prn [:prevayler-clj.prevayler4 :before (find-ns 'prevayler-clj.prevayler4)])
+    (prn [:simple.check2 :before (find-ns 'simple.check2)])
     (let [r (repl/refresh)]
       (prn [:prevayler-clj.prevayler4 :after (find-ns 'prevayler-clj.prevayler4)])
+      (prn [:simple.check2 :after (find-ns 'simple.check2)])
       (when (instance? java.lang.Throwable r)
         (throw r))))
   (unload-deleted-namespaces opts))
