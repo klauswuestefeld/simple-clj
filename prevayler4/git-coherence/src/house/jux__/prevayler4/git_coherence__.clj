@@ -54,7 +54,8 @@
   (git-restore required-commit opts)
   (binding [*ns* (find-ns 'house.jux--.prevayler4.git-coherence--)] ; Any ns just to satisfy refresh's expectation of running in the repl.
     (let [r (repl/refresh)]
-      (prn r)))
+      (when (instance? java.lang.Throwable r)
+        (throw r))))
   (unload-deleted-namespaces opts))
 
 (defn commit-change-event [old-hash {:keys [repo-dir]}]
