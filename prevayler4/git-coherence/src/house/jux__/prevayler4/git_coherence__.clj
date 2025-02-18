@@ -31,7 +31,9 @@
 (defn- git-restore [required-commit {:keys [repo-dir src-dir refreshable-namespace-prefixes] :as opts}]
   (apply git "restore" "--source" required-commit "--staged" "--worktree" "--"
          (concat
-          (mapcat (partial restore-paths opts) refreshable-namespace-prefixes)
+          (if (seq refreshable-namespace-prefixes)
+            (mapcat (partial restore-paths opts) refreshable-namespace-prefixes)
+            [src-dir])
           [:dir repo-dir])))
 
 (defn- load! [required-commit {:keys [repo-dir src-dir] :as opts}]
