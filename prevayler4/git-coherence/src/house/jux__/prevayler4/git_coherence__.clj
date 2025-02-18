@@ -34,7 +34,7 @@
           [:dir repo-dir])))
 
 (defn- unload-deleted-namespaces [{:keys [repo-dir src-dir refreshable-namespace-prefixes]}]
-  (let [existing-namespaces (-> (find-namespaces-in-dir (io/file repo-dir src-dir)) set)
+  (let [existing-namespaces (-> (time (find-namespaces-in-dir (io/file repo-dir src-dir))) set)
         _ (check (seq existing-namespaces) "no namespaces were found")
         refreshable-namespace? (fn [namespace]
                                   (let [namespace-name (-> namespace ns-name name)]
