@@ -103,9 +103,10 @@
   [start-prevayler-fn config {:keys [coherent-mode? git-reset? repo-dir src-dir] :as opts}]
   (let [opts (cond-> opts
                (nil? repo-dir) (assoc :repo-dir (.getAbsoluteFile (io/file ""))))]
-    (when git-reset?
+    (when (and coherent-mode? git-reset?)
       (git "reset" "--hard" :dir repo-dir))
-    (repl/set-refresh-dirs (io/file (:repo-dir opts) src-dir))
+    (when coherent-mode?
+      (repl/set-refresh-dirs (io/file (:repo-dir opts) src-dir)))
     (if coherent-mode?
       (check (not (workspace-dirty?)) "Unable to provide code coherence because workspace has uncommited files.")
       (println "COHERENCE IS OFF.\n  Journal replay might fail now or in future runs."))
