@@ -176,5 +176,4 @@
             (is false "server should not have started"))
           (catch clojure.lang.ExceptionInfo e
             (is (re-find #"Inconsistent state detected during event journal replay"
-                         (-> e ex-data :process :err))))))
-      )))
+                         (-> e ex-data :process :err)))))))))
