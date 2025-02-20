@@ -10,12 +10,13 @@
   ;; Keep this dependencies list in sync with deps.edn !!!
   ;;
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  :dependencies [[org.clojure/clojure "1.12.0"]
-                 [prevayler-clj/prevayler4 "2024.03.18"]
+  :dependencies [[prevayler-clj/prevayler4 "2024.03.18"]
                  [org.clojure/tools.namespace "1.4.4"]
                  [simple/check "2024.06.09"]]
 
-
+  :plugins [[lein-parent "0.3.9"]]
+  :parent-project {:coords  [house.jux/parent-project "2024.06.10"]
+                   :inherit [:deploy-repositories :dependencies]}
             
   :profiles {:dev {:dependencies [[babashka/fs "0.5.24"]
                                   [babashka/process "0.5.22"]

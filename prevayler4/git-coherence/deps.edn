@@ -1,6 +1,6 @@
 ;; this file is used to allow refering to this project from test-project
 ;; it must be kept in sync with project.clj
-{:deps {org.clojure/clojure {:mvn/version "1.12.0"}
+{:deps {org.clojure/clojure {:mvn/version "1.11.3"}
         org.clojure/tools.namespace {:mvn/version "1.4.4"}
         prevayler-clj/prevayler4 {:mvn/version "2024.03.18"}
         simple/check {:mvn/version "2024.06.09"}}}
