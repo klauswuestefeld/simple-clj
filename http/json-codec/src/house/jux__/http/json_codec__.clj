@@ -4,6 +4,7 @@
   (:import
    [java.io BufferedReader BufferedWriter InputStream InputStreamReader OutputStreamWriter PipedInputStream PipedOutputStream]))
 
+
 (defn- input-stream? [value]
   (instance? InputStream value))
 
