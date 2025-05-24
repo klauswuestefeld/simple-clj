@@ -96,14 +96,14 @@
      - repo-dir: an absolute java.io.File that points to the git repository directory,
                  defaults to the process working directory
      - src-dir: the path of the source directory as a string
-     - refreshable-namespaces-prefixes: a sequence of namespace prefix symbols that need to be refreshed.
-                                        All namespaces whose names start with one of the given symbols
-                                        will be refreshed (e.g. ['my-system.biz] will refresh 'my-system.biz,
-                                        'my-system.biz.somenamespace and so on).
-                                        An empty sequence means all namespaces will be refreshed.
-                                        Note that namespaces that depend on a namespace that was refreshed
-                                        will also be refreshed, regardless of the namespace being in this
-                                        sequence or not"
+     - refreshable-namespace-prefixes: a sequence of namespace prefix symbols that need to be refreshed.
+                                       All namespaces whose names start with one of the given symbols
+                                       will be refreshed (e.g. ['my-system.biz] will refresh 'my-system.biz,
+                                       'my-system.biz.somenamespace and so on).
+                                       An empty sequence means all namespaces will be refreshed.
+                                       Note that namespaces that depend on a namespace that was refreshed
+                                       will also be refreshed, regardless of the namespace being in this
+                                       sequence or not"
   [start-prevayler-fn config {:keys [coherent-mode? git-reset? repo-dir src-dir] :as opts}]
   (let [opts (cond-> opts
                (nil? repo-dir) (assoc :repo-dir (.getAbsoluteFile (io/file ""))))]
