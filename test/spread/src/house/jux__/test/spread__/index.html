@@ -770,9 +770,13 @@
     });
   }
 
-  attachEventHandlers();
-  loadTestsTree();
-  runTests();
+  async function init() {
+    attachEventHandlers();
+    await loadTestsTree();
+    await runTests();
+  }
+
+  init();
 </script>
 
 </html>
