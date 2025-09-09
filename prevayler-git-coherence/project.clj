@@ -1,6 +1,5 @@
-(defproject house.jux/prevayler4.git-coherence "2025.05.23"
+(defproject house.jux/prevayler-git-coherence "2025.09.11"
   :description "Provides a prevayler business function wrapper that is code version coherent"
-  :url "https://github.com/klauswuestefeld/simple-clj/tree/master/prevayler4/git-coherence"
   :license {:name "BSD 3-Clause"
             :url "https://github.com/klauswuestefeld/simple-clj/blob/master/LICENSE"}
 
@@ -10,7 +9,7 @@
   ;; Keep this dependencies list in sync with deps.edn !!!
   ;;
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  :dependencies [[prevayler-clj/prevayler4 "2024.03.18"]
+  :dependencies [[house.jux/prevayler "2025.09.11"]
                  [org.clojure/tools.namespace "1.4.4"]
                  [simple/check "2024.06.09"]]
 

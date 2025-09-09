@@ -1,10 +1,10 @@
-(ns house.jux--.prevayler4.git-coherence--
+(ns house.jux--.prevayler-git-coherence--
   (:require
    [clojure.java.shell :as shell]
    [clojure.java.io :as io]
    [clojure.tools.namespace.repl :as repl]
    [clojure.tools.namespace.find :refer [find-namespaces-in-dir]]
-   [prevayler-clj.prevayler4 :as prevayler]
+   [house.jux--.prevayler-- :refer [handle!]]
    [simple.check2 :refer [check]]
    [clojure.string :as str]
    [clojure.set :as set]))
@@ -41,7 +41,7 @@
         namespaces-before (-> (find-namespaces-in-dir namespaces-dir) set)]
     (git-restore required-commit opts)
     (let [namespaces-after (-> (find-namespaces-in-dir namespaces-dir) set)]
-      (binding [*ns* (find-ns 'house.jux--.prevayler4.git-coherence--)] ; Any ns just to satisfy refresh's expectation of running in the repl.
+      (binding [*ns* (find-ns 'house.jux--.prevayler-git-coherence--)] ; Any ns just to satisfy refresh's expectation of running in the repl.
         (let [r (repl/refresh)]
           (when (instance? java.lang.Throwable r)
             (throw r))))
@@ -121,5 +121,5 @@
                                                     opts))]
       (when coherent-mode?
         (when-let [event (commit-change-event (:current-commit-hash @new-prevayler) opts)]
-          (prevayler/handle! new-prevayler event)))
+          (handle! new-prevayler event)))
       new-prevayler)))

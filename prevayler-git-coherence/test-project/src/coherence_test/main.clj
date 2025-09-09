@@ -1,8 +1,9 @@
 (ns coherence-test.main
   (:require [ring.adapter.jetty :refer [run-jetty]]
             [clojure.edn :as edn]
-            [prevayler-clj.prevayler4 :refer [prevayler! handle!]]
-            [house.jux--.prevayler4.git-coherence-- :as coherence]
+            [house.jux--.prevayler-- :refer [handle!]]
+            [house.jux--.prevayler-impl4-- :refer [prevayler!]]
+            [house.jux--.prevayler-git-coherence-- :as coherence]
             [clojure.java.io :as io]
             [clojure.tools.namespace.repl :as repl]
             [babashka.cli :as cli]))

@@ -1,8 +1,8 @@
-(ns prevayler4.git-coherence-test
+(ns git-coherence-test
   (:require [clojure.test :refer [deftest is testing]]
             [clojure.java.shell :refer [with-sh-dir]]
             [clojure.java.io :as io]
-            [house.jux--.prevayler4.git-coherence-- :as coherence]
+            [house.jux--.prevayler-git-coherence-- :as coherence]
             [babashka.fs :as fs]
             [org.httpkit.client :as http]
             [clojure.edn :as edn]
@@ -57,7 +57,7 @@
 
 (defn start-server! [& {:keys [git-reset prefixes] :or {prefixes ["coherence-test"]}}]
   (let [port (get-port)
-        process (apply process/process {:out :string :err :string :dir repo-dir} "clojure" "-Sdeps" (format "{:deps {house.jux/prevayler4.git-coherence {:local/root \"%s\"}}}" (str (fs/absolutize (fs/path "")))) "-M" "-m" "coherence-test.main" "--port" (str port) "--repo-dir" (str (fs/absolutize repo-dir)) "--git-reset" (boolean git-reset) (mapcat #(do ["--prefixes" %]) prefixes))]
+        process (apply process/process {:out :string :err :string :dir repo-dir} "clojure" "-Sdeps" (format "{:deps {house.jux/prevayler-git-coherence {:local/root \"%s\"}}}" (str (fs/absolutize (fs/path "")))) "-M" "-m" "coherence-test.main" "--port" (str port) "--repo-dir" (str (fs/absolutize repo-dir)) "--git-reset" (boolean git-reset) (mapcat #(do ["--prefixes" %]) prefixes))]
     (wait-for-server port process)))
 
 (defn get-state [server]
