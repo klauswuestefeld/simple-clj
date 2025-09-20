@@ -1,4 +1,4 @@
-(defproject house.jux/check "2025.09.20"
+(defproject house.jux/check "2025.09.21"
 
   :description "An assertion that cannot be turned off."
   :url "https://github.com/klauswuestefeld/simple-clj/tree/master/check"
@@ -10,4 +10,4 @@
   :parent-project {:coords  [house.jux/parent-project "2024.06.10"]
                    :inherit [:deploy-repositories :dependencies]}
 
-  :dependencies [[house.jux/exceptions "2024.06.10"]])
+  :dependencies [[house.jux/exceptions "2025.01.10"]])
