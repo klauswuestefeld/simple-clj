@@ -8,13 +8,19 @@
            {:error message, :expected true}
            {:error message, :stacktrace (with-out-str (stacktrace/print-cause-trace e))}) (ex-data e)))
 
-
+(defn- drain! [^java.io.InputStream in] ; Otherwise uploads from the browser proxied through Caddy (HTTP2) will stay "pending" forever.
+  (let [buf (byte-array 8192)]
+      (loop []
+        (let [n (.read in buf)]
+          (when (pos? n) (recur))))))
+  
 (defn handle [delegate-handler request]
   (try
 
     (delegate-handler request)
 
     (catch Exception e
+      (drain! (:body request))
       (let [message   (message e)
             expected? (expected? e)]
         (if expected?
@@ -25,4 +31,5 @@
          :body   (->body e message expected?)}))))
 
 (defn wrap-exceptions [delegate-handler]
-  (partial handle delegate-handler))
+  (fn [request]
+    (handle delegate-handler request)))
