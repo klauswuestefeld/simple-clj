@@ -9,10 +9,11 @@
            {:error message, :stacktrace (with-out-str (stacktrace/print-cause-trace e))}) (ex-data e)))
 
 (defn- drain! [^java.io.InputStream in] ; Otherwise uploads from the browser proxied through Caddy (HTTP2) will stay "pending" forever.
-  (let [buf (byte-array 8192)]
+  (when in
+    (let [buf (byte-array 8192)]
       (loop []
         (let [n (.read in buf)]
-          (when (pos? n) (recur))))))
+          (when (pos? n) (recur)))))))
   
 (defn handle [delegate-handler request]
   (try
