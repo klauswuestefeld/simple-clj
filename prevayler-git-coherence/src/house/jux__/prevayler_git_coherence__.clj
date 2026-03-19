@@ -24,9 +24,11 @@
   (-> sym name (str/replace "." "/") (str/replace "-" "_")))
 
 (defn- restore-paths [{:keys [repo-dir src-dir]} prefix]
-  (filter
-   #(.exists (io/file repo-dir %))
-   [(str src-dir "/" (ns->path prefix)) (str src-dir "/" (ns->path prefix) ".clj")]))
+  (let [result (filter
+                #(.exists (io/file repo-dir %))
+                [(str src-dir "/" (ns->path prefix)) (str src-dir "/" (ns->path prefix) ".clj")])]
+    (check (seq result) "No namespaces found:" prefix)
+    result))
 
 (defn- git-restore [required-commit {:keys [repo-dir src-dir refreshable-namespace-prefixes] :as opts}]
   (apply git "restore" "--source" required-commit "--staged" "--worktree" "--"
@@ -36,7 +38,7 @@
             [src-dir])
           [:dir repo-dir])))
 
-(defn- load! [required-commit {:keys [repo-dir src-dir] :as opts}]
+(defn- refresh-namespaces! [required-commit {:keys [repo-dir src-dir] :as opts}]
   (let [namespaces-dir (io/file repo-dir src-dir)
         namespaces-before (-> (find-namespaces-in-dir namespaces-dir) set)]
     (git-restore required-commit opts)
@@ -69,7 +71,7 @@
             required-commit (:current-commit-hash state)]
         (check required-commit "Journal event must be replayed with an associated commit.")
         (when-not (= required-commit @loaded-commit) ; Works for the first event also (loaded-commit atom is nil).
-          (load! required-commit opts)
+          (refresh-namespaces! required-commit opts)
           (reset! loaded-commit required-commit))
         (if new-commit
           state

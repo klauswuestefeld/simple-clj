@@ -1,4 +1,4 @@
-(defproject house.jux/prevayler-git-coherence "2025.09.11"
+(defproject house.jux/prevayler-git-coherence "2026.03.19"
   :description "Provides a prevayler business function wrapper that is code version coherent"
   :license {:name "BSD 3-Clause"
             :url "https://github.com/klauswuestefeld/simple-clj/blob/master/LICENSE"}
